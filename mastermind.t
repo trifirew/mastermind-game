@@ -7,13 +7,68 @@ import GUI, Anim in "Anim.tu", G in "G.tu"
 View.Set ("graphics:800;480")
 View.Set ("title:Mastermind by Betty & Keisun")
 
-
-% Player variables
+% Types
 type Player :
     record
 	name : string
 	score : int
     end record
+type Box :
+    record
+	x1, y1, x2, y2 : int
+    end record
+% Dot class
+class Dot
+    import Box
+    export getC,
+	drawPattern,
+	getBox
+
+    const ORANGE : int := RGB.AddColor (1, 0.6471, 0)
+
+    var c : int
+    var rectangle : Box
+    case Rand.Int (1, 6) of
+	label 1 :
+	    c := brightred
+	label 2 :
+	    c := brightblue
+	label 3 :
+	    c := brightgreen
+	label 4 :
+	    c := yellow
+	label 5 :
+	    c := ORANGE
+	label 6 :
+	    c := black
+    end case
+
+    forward proc setBox (x, y, xRadius, yRadius : int)
+
+    function getC : int
+	result c
+    end getC
+
+    procedure drawPattern (x, y, xRadius, yRadius : int)
+	drawfilloval (x, y, xRadius, xRadius, c)
+	drawoval (x, y, xRadius, yRadius, black)
+	setBox (x, y, xRadius, xRadius)
+    end drawPattern
+
+    function getBox : Box
+	result rectangle
+    end getBox
+
+    body proc setBox (x, y, xRadius, yRadius : int)
+	rectangle.x1 := x - xRadius
+	rectangle.y1 := y - yRadius
+	rectangle.x2 := x + xRadius
+	rectangle.y2 := y + yRadius
+    end setBox
+end Dot
+% Dots
+var dots : array 1 .. 4 of pointer to Dot
+% Player variables
 var player : Player
 % Buttons
 var btnGiveUp : int
@@ -39,10 +94,13 @@ var fontSans12 : int := Font.New ("sans serif:12")
 var fontMono28 : int := Font.New ("mono:28")
 var font4 : int := Font.New ("serif:30:italic")
 var font5 : int := Font.New ("serif:20:italic")
+
+
 % Helper procedures
 forward proc topBar
 forward proc dot (pos : int, c : int)
 forward proc initBtn
+forward fcn mouseInBox (box : Box) : boolean
 
 % Show the opening screen
 procedure openingScreen
@@ -130,7 +188,9 @@ end newGameScreen
 procedure gameplayScreen
     % Draw dots
     for i : 1 .. 4
-	dot (i, white)
+	new Dot, dots (i)
+	dots (i) -> drawPattern (i * 92 + 10, 336, 32, 32)
+	%% TODO: Should not draw colour
     end for
     drawline (480, 0, 480, 440, black)
     % Show player info
@@ -187,9 +247,14 @@ procedure fillDot
     buttonwait ("down", x, y, bn, bud)
     delay (200)
     % mousewhere (x, y, b)
-    if x >= 70 and x <= 134 and y >= 304 and y <= 368 then
-	dot (1, dotColor)
-    end if
+    % if x >= 70 and x <= 134 and y >= 304 and y <= 368 then
+    %     dot (1, dotColor)
+    % end if
+    for i : 1 .. 4
+	if mouseInBox (dots (i) -> getBox) then
+	    dot (i, dotColor)
+	end if
+    end for
     for btn : btnRed .. btnBlack
 	GUI.SetColor (btn, grey)
     end for
@@ -225,6 +290,13 @@ body proc initBtn
     GUI.Hide (btnOrange)
     GUI.Hide (btnBlack)
 end initBtn
+
+body fcn mouseInBox (box : Box) : boolean
+    if x >= box.x1 and x <= box.x2 and y >= box.y1 and y <= box.y2 then
+	result true
+    end if
+    result false
+end mouseInBox
 
 % openingScreen
 % instructionScreen
