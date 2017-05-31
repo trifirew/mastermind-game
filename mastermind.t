@@ -18,6 +18,7 @@ var player : Player
 % Buttons
 var btnGiveUp : int
 var btnRed, btnBlue, btnGreen, btnYellow, btnBlack, btnOrange : int
+var btnContinue, btnExit, btnNewGame : int
 % Mouse
 var x, y, b, bn, bud : int
 % Pictures
@@ -150,9 +151,16 @@ end gameplayScreen
 % Show the result screen
 procedure resultScreen
     cls
-    put "THIS IS RESULT SCREEN"
-    drawbox (150, 300, 650, 400, black)
-    drawbox (250, 25, 550, 250, black)
+    G.TextCtr ("Name: " + player.name + "       " + "Score: " + intstr (player.score), 400, fontSans16, black)
+    drawoval (250, 320, 40, 40, black)
+    drawoval (350, 320, 40, 40, black)
+    drawoval (450, 320, 40, 40, black)
+    drawoval (550, 320, 40, 40, black)
+    btnContinue := GUI.CreateButtonFull (100, 160, 80, "CONTINUE", gameplayScreen, 40, chr (0), false)
+    btnExit := GUI.CreateButtonFull (100, 160, 80, "Exit", gameplayScreen, 40, chr (0), false)
+    btnNewGame := GUI.CreateButtonFull (100, 160, 80, "NEW GAME", gameplayScreen, 40, chr (0), false)
+    %drawbox (150, 300, 650, 400, black)
+    %drawbox (250, 25, 550, 250, black)
     %% TODO: Result screen
 end resultScreen
 
@@ -220,9 +228,9 @@ end initBtn
 
 % openingScreen
 % instructionScreen
-newGameScreen
-% player.name := "WWWWwwwwMMMMmmmm"
-% player.score := 1000
+% newGameScreen
+player.name := "WWWWwwwwMMMMmmmm"
+player.score := 1000
 initBtn
 gameplayScreen
 
