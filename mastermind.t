@@ -7,15 +7,7 @@ import GUI, Anim in "Anim.tu", G in "G.tu"
 View.Set ("graphics:800;480")
 View.Set ("title:Mastermind by Betty & Keisun")
 
-% Colours
-var cLightGreen : int := RGB.AddColor (0.8, 0.95, 0.75)
-% Fonts
-var fontSans40 : int := Font.New ("sans serif:40")
-var fontSans36 : int := Font.New ("sans serif:36")
-var fontSans24 : int := Font.New ("sans serif:24")
-var fontSans16 : int := Font.New ("sans serif:16")
-var fontSans12 : int := Font.New ("sans serif:12")
-var fontMono28 : int := Font.New ("mono:28")
+
 % Player variables
 type Player :
     record
@@ -25,11 +17,56 @@ type Player :
 var player : Player
 % Buttons
 var btnGiveUp : int
-
+var btnRed, btnBlue, btnGreen, btnYellow, btnBlack, btnOrange : int
+% Mouse
+var x, y, b, bn, bud : int
+% Pictures
+var picBoard : int := Pic.FileNew ("Mastermind.jpg")
+var picLogo : int := Pic.FileNew ("Mastermind-Logo.jpg")
+var picInstruction : int := Pic.FileNew ("instruction.jpg")
+var picContinue : int := Pic.FileNew ("continue.gif")
+var picThank : int := Pic.FileNew ("thank.jpg")
+% Colours
+var cLightGreen : int := RGB.AddColor (0.8, 0.95, 0.75)
+var cOrange : int := RGB.AddColor (1, 0.6471, 0)
+% Fonts
+var fontSans40 : int := Font.New ("sans serif:40")
+var fontSans36 : int := Font.New ("sans serif:36")
+var fontSans24 : int := Font.New ("sans serif:24")
+var fontSans16 : int := Font.New ("sans serif:16")
+var fontSans12 : int := Font.New ("sans serif:12")
+var fontMono28 : int := Font.New ("mono:28")
+var font4 : int := Font.New ("serif:30:italic")
+var font5 : int := Font.New ("serif:20:italic")
 % Helper procedures
 forward proc topBar
-forward proc dot (pos : int)
+forward proc dot (pos : int, c : int)
 forward proc initBtn
+
+% Show the opening screen
+procedure openingScreen
+    Pic.Draw (picLogo, 150, 330, picCopy)
+    Pic.Draw (picBoard, 250, 80, picCopy)
+    G.TextCtr ("Press any key to begin", 50, fontSans12, black)
+    locatexy (395, 30)
+    var ch : char := getchar
+end openingScreen
+
+% Show the instruction screen
+procedure instructionScreen
+    Pic.Draw (picInstruction, 0, 0, picCopy)
+    G.TextCtr ("Instruction", 400, fontSans36, black)
+    G.TextCtr ("The computer will randomly choose 4 colours from green, red, blue, yellow, orange and black.", 330, fontSans12, black)
+    G.TextCtr ("You guess 4 colours at each turn, the computer then tells you how many you guessed correctly", 300, fontSans12, black)
+    G.TextCtr ("The colour and the position must be correct, but it doesn'y tell you which one is correct.", 270, fontSans12, black)
+    G.TextCtr ("You have 10 chances total to get the correct pattern.", 240, fontSans12, black)
+    G.TextCtr ("Hope you enjoy!", 180, fontSans24, black)
+    Pic.Draw (picContinue, 600, 30, picMerge)
+    loop
+	buttonwait ("down", x, y, bn, bud)
+	exit when x >= 600 and x <= 750 and y >= 30 and y <= 100
+    end loop
+end instructionScreen
 
 % Start a new game, let the player enter their name
 procedure newGameScreen
@@ -92,11 +129,22 @@ end newGameScreen
 procedure gameplayScreen
     % Draw dots
     for i : 1 .. 4
-	dot (i)
+	dot (i, white)
     end for
+    drawline (480, 0, 480, 440, black)
     % Show player info
     topBar
     %% TODO: Buttons, previous guess
+    GUI.Show (btnGiveUp)
+    GUI.Show (btnRed)
+    GUI.Show (btnBlue)
+    GUI.Show (btnGreen)
+    GUI.Show (btnYellow)
+    GUI.Show (btnOrange)
+    GUI.Show (btnBlack)
+    for btn : btnRed .. btnBlack
+	GUI.SetColor (btn, grey)
+    end for
 end gameplayScreen
 
 % Show the result screen
@@ -108,28 +156,75 @@ procedure resultScreen
     %% TODO: Result screen
 end resultScreen
 
+% Called when color button is clicked
+procedure fillDot
+    var dotColor : int
+    if GUI.GetEventWidgetID = btnRed then
+	dotColor := brightred
+    elsif GUI.GetEventWidgetID = btnBlue then
+	dotColor := brightblue
+    elsif GUI.GetEventWidgetID = btnGreen then
+	dotColor := brightgreen
+    elsif GUI.GetEventWidgetID = btnYellow then
+	dotColor := yellow
+    elsif GUI.GetEventWidgetID = btnOrange then
+	dotColor := cOrange
+    elsif GUI.GetEventWidgetID = btnBlack then
+	dotColor := black
+    end if
+    for btn : btnRed .. btnBlack
+	GUI.SetColor (btn, grey)
+    end for
+    GUI.SetColor (GUI.GetEventWidgetID, dotColor)
+    buttonwait ("down", x, y, bn, bud)
+    delay (200)
+    % mousewhere (x, y, b)
+    if x >= 70 and x <= 134 and y >= 304 and y <= 368 then
+	dot (1, dotColor)
+    end if
+    for btn : btnRed .. btnBlack
+	GUI.SetColor (btn, grey)
+    end for
+end fillDot
+
 % Show player info at the top of the screen
 body proc topBar
     drawfillbox (0, 440, maxx, maxy, cLightGreen)
     Font.Draw (player.name, 10, 454, fontSans12, black)
     G.TextRight ("SCORE: " + intstr (player.score), 10, 454, fontSans12, black)
+    G.TextCtr ("SCORE: " + intstr (player.score), 454, fontSans12, black)
 end topBar
 
 % Draw dot at a given position
 body proc dot
-    drawoval (pos * 60, 300, 25, 25, black)
+    drawfilloval (pos * 92 + 10, 336, 32, 32, c)
+    drawoval (pos * 92 + 10, 336, 32, 32, black)
 end dot
 
 body proc initBtn
     btnGiveUp := GUI.CreateButton (0, 0, 40, "GIVE UP", resultScreen)
+    btnRed := GUI.CreateButtonFull (100, 220, 80, "RED", fillDot, 40, chr (0), false)
+    btnBlue := GUI.CreateButtonFull (200, 220, 80, "BLUE", fillDot, 40, chr (0), false)
+    btnGreen := GUI.CreateButtonFull (300, 220, 80, "GREEN", fillDot, 40, chr (0), false)
+    btnYellow := GUI.CreateButtonFull (100, 160, 80, "YELLOW", fillDot, 40, chr (0), false)
+    btnOrange := GUI.CreateButtonFull (200, 160, 80, "ORANGE", fillDot, 40, chr (0), false)
+    btnBlack := GUI.CreateButtonFull (300, 160, 80, "BLACK", fillDot, 40, chr (0), false)
+    GUI.Hide (btnGiveUp)
+    GUI.Hide (btnRed)
+    GUI.Hide (btnBlue)
+    GUI.Hide (btnGreen)
+    GUI.Hide (btnYellow)
+    GUI.Hide (btnOrange)
+    GUI.Hide (btnBlack)
 end initBtn
 
+% openingScreen
+% instructionScreen
+newGameScreen
+% player.name := "WWWWwwwwMMMMmmmm"
+% player.score := 1000
 initBtn
-% newGameScreen
-player.name := "WWWWwwwwMMMMmmmm"
-player.score := 1000
 gameplayScreen
-% put chr (16#AB)+ chr (16#68)
 
 % Wait for player to click buttons
 loop
