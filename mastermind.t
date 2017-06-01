@@ -14,6 +14,11 @@ type Player :
 	name : string
 	score : int
     end record
+type PreviousGuess :
+    record
+	colors : array 1 .. 4 of int
+	correctDot : int
+    end record
 type Box :
     record
 	x1, y1, x2, y2 : int
@@ -21,46 +26,67 @@ type Box :
 % Dot class
 class Dot
     import Box
-    export getC,
-	drawPattern, drawPatternNoSet,
+    export getC, getGuess,
+	drawPattern, drawSetLocation, guess, correct,
 	getBox
 
     const ORANGE : int := RGB.AddColor (1, 0.6471, 0)
 
-    var c : int
+    var actualC : int
     var guessC : int := white
+    var thisX, thisY, thisXRadius, thisYRadius : int
     var rectangle : Box
     case Rand.Int (1, 6) of
 	label 1 :
-	    c := brightred
+	    actualC := brightred
 	label 2 :
-	    c := brightblue
+	    actualC := brightblue
 	label 3 :
-	    c := brightgreen
+	    actualC := brightgreen
 	label 4 :
-	    c := yellow
+	    actualC := yellow
 	label 5 :
-	    c := ORANGE
+	    actualC := ORANGE
 	label 6 :
-	    c := black
+	    actualC := black
     end case
 
     forward proc setBox (x, y, xRadius, yRadius : int)
 
     function getC : int
-	result c
+	result actualC
     end getC
+    
+    function getGuess : int
+	result guessC
+    end getGuess
 
     procedure drawPattern (x, y, xRadius, yRadius : int)
-	drawfilloval (x, y, xRadius, yRadius, c)
+	drawfilloval (x, y, xRadius, yRadius, actualC)
 	drawoval (x, y, xRadius, yRadius, black)
-	setBox (x, y, xRadius, xRadius)
     end drawPattern
 
-    procedure drawPatternNoSet (x, y, xRadius, yRadius : int)
-	drawfilloval (x, y, xRadius, yRadius, c)
+    procedure drawSetLocation (x, y, xRadius, yRadius : int)
 	drawoval (x, y, xRadius, yRadius, black)
-    end drawPatternNoSet
+	setBox (x, y, xRadius, xRadius)
+	thisX := x
+	thisY := y
+	thisXRadius := xRadius
+	thisYRadius := yRadius
+    end drawSetLocation
+
+    procedure guess (c : int)
+	guessC := c
+	drawfilloval (thisX, thisY, thisXRadius, thisYRadius, c)
+	drawoval (thisX, thisY, thisXRadius, thisYRadius, black)
+    end guess
+
+    function correct : boolean
+	if guessC = actualC then
+	    result true
+	end if
+	result false
+    end correct
 
     function getBox : Box
 	result rectangle
@@ -73,13 +99,15 @@ class Dot
 	rectangle.y2 := y + yRadius
     end setBox
 end Dot
-% Dots
+% Game
 var dots : array 1 .. 4 of pointer to Dot
-% Player variables
+var previous : array 1 .. 13 of PreviousGuess
+var guessCount : int
+% Players
 var player : Player
 % Buttons
 var btnGiveUp, btnMusic : int
-var btnRed, btnBlue, btnGreen, btnYellow, btnBlack, btnOrange : int
+var btnRed, btnBlue, btnGreen, btnYellow, btnBlack, btnOrange, btnDone : int
 var btnContinue, btnExit, btnNewGame : int
 % Mouse
 var x, y, b, bn, bud : int
@@ -104,12 +132,14 @@ var font5 : int := Font.New ("serif:20:italic")
 %Counts
 var music : int := 0
 
+% Pre-declared procedures
+forward procedure gameplayScreen
 % Helper procedures
 forward proc topBar
+forward proc showPreviousGuess
 forward proc dot (pos : int, c : int)
 forward proc initBtn
 forward fcn mouseInBox (box : Box) : boolean
-forward procedure gameplayScreen
 
 % Show the opening screen
 procedure openingScreen
@@ -203,29 +233,24 @@ body procedure gameplayScreen
     % Draw dots
     for i : 1 .. 4
 	new Dot, dots (i)
-	dots (i) -> drawPattern (i * 92 + 10, 336, 32, 32)
+	dots (i) -> drawSetLocation (i * 92 + 10, 336, 32, 32)
 	%% TODO: Should not draw colour
     end for
+    guessCount := 0
     drawline (480, 0, 480, 440, black)
     % Show player info
     topBar
-    %% TODO: Done button, previous guess
+    %% TODO: Limit number of guess chance
+    %% IN PROGRESS: Done button, previous guess
     GUI.Show (btnGiveUp)
     GUI.Show (btnMusic)
-    for btn : btnRed .. btnBlack
+    for btn : btnRed .. btnDone
 	GUI.SetColor (btn, grey)
 	GUI.Show (btn)
     end for
 
-    for i : 1 .. 4
-	dots (i) -> drawPatternNoSet (i * 20 + 600, 344, 8, 8)
-    end for
-    Font.Draw ("1", 500, 336, fontSans16, black)
-    G.TextRight ("4", 20, 336, fontSans16, black)
-    for i : 1 .. 13
-	drawline (480, i * 30, maxx, i * 30, black)
-    end for
-
+    % Show previous guesses
+    showPreviousGuess
 end gameplayScreen
 
 %Show the ending screen
@@ -242,6 +267,7 @@ end endingScreen
 
 % Show the result screen
 procedure resultScreen
+    View.Set ("offscreenonly")
     cls
     for btn : btnRed .. btnBlack
 	GUI.Hide (btn)
@@ -254,6 +280,8 @@ procedure resultScreen
     GUI.Show (btnExit)
     GUI.Show (btnNewGame)
     GUI.Show (btnContinue)
+    Anim.Uncover (Anim.TOP, 2, 5)
+    View.Set ("nooffscreenonly")
 end resultScreen
 
 % Called when color button is clicked
@@ -284,13 +312,35 @@ procedure fillDot
     % end if
     for i : 1 .. 4
 	if mouseInBox (dots (i) -> getBox) then
-	    dot (i, dotColor)
+	    % dot (i, dotColor)
+	    dots (i) -> guess (dotColor)
 	end if
     end for
     for btn : btnRed .. btnBlack
 	GUI.SetColor (btn, grey)
     end for
 end fillDot
+
+procedure checkAnswer
+    var correctDot : int := 0
+    guessCount += 1
+
+    for i : 1 .. 4
+	previous (guessCount).colors (i) := dots (i) -> getGuess
+	if dots (i) -> correct then
+	    correctDot += 1
+	end if
+    end for
+    previous (guessCount).correctDot := correctDot
+    locate (1, 1)
+    put correctDot
+    if correctDot = 4 then
+	player.score += 100
+	resultScreen
+	return
+    end if
+    showPreviousGuess
+end checkAnswer
 
 proc musicOnOff
     music := music + 1
@@ -308,6 +358,27 @@ body proc topBar
     G.TextCtr ("SCORE: " + intstr (player.score), 454, fontSans12, black)
 end topBar
 
+body proc showPreviousGuess
+    for i : 1 .. 13
+	drawline (480, i * 30, maxx, i * 30, black)
+    end for
+    % for i : 1 .. 4
+    %     dots (i) -> drawPattern (i * 20 + 600, 14, 8, 8)
+    % end for
+    % for j : 1 .. guessCount
+    var j := guessCount
+    if j > 0 then
+	for i : 1 .. 4
+	    drawfilloval (i * 20 + 600, j * 30 - 16, 8, 8, previous (j).colors (i))
+	    drawoval (i * 20 + 600, j * 30 - 16, 8, 8, black)
+	end for
+	Font.Draw (intstr (j), 500, j * 30 - 23, fontSans16, black)
+	G.TextRight (intstr (previous (j).correctDot), 20, j * 30 - 23, fontSans16, black)
+    end if
+    % end for
+
+end showPreviousGuess
+
 % Draw dot at a given position
 body proc dot
     drawfilloval (pos * 92 + 10, 336, 32, 32, c)
@@ -322,22 +393,26 @@ body proc initBtn
     btnYellow := GUI.CreateButtonFull (100, 160, 80, "YELLOW", fillDot, 40, chr (0), false)
     btnOrange := GUI.CreateButtonFull (200, 160, 80, "ORANGE", fillDot, 40, chr (0), false)
     btnBlack := GUI.CreateButtonFull (300, 160, 80, "BLACK", fillDot, 40, chr (0), false)
+    btnDone := GUI.CreateButton (100, 400, 300, "DONE!", checkAnswer)
     btnContinue := GUI.CreateButtonFull (350, 160, 100, "CONTINUE", gameplayScreen, 40, chr (0), false)
     btnExit := GUI.CreateButtonFull (550, 160, 100, "Exit", endingScreen, 40, chr (0), false)
     btnNewGame := GUI.CreateButtonFull (150, 160, 100, "NEW GAME", newGameScreen, 40, chr (0), false)
     btnMusic := GUI.CreateButton (0, 0, 40, "Music ON/OFF", musicOnOff)
     GUI.SetColor (btnMusic, white)
-    GUI.Hide (btnGiveUp)
-    GUI.Hide (btnRed)
-    GUI.Hide (btnBlue)
-    GUI.Hide (btnGreen)
-    GUI.Hide (btnYellow)
-    GUI.Hide (btnOrange)
-    GUI.Hide (btnBlack)
-    GUI.Hide (btnExit)
-    GUI.Hide (btnNewGame)
-    GUI.Hide (btnContinue)
-    GUI.Hide (btnMusic)
+    % GUI.Hide (btnGiveUp)
+    % GUI.Hide (btnRed)
+    % GUI.Hide (btnBlue)
+    % GUI.Hide (btnGreen)
+    % GUI.Hide (btnYellow)
+    % GUI.Hide (btnOrange)
+    % GUI.Hide (btnBlack)
+    % GUI.Hide (btnExit)
+    % GUI.Hide (btnNewGame)
+    % GUI.Hide (btnContinue)
+    % GUI.Hide (btnMusic)
+    for btn : btnGiveUp .. btnMusic
+	GUI.Hide (btn)
+    end for
 end initBtn
 
 body fcn mouseInBox (box : Box) : boolean
@@ -357,5 +432,6 @@ gameplayScreen
 
 % Wait for player to click buttons
 loop
+    mousewhere (x, y, b)
     exit when GUI.ProcessEvent
 end loop
