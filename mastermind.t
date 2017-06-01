@@ -6,6 +6,7 @@
 import GUI, Anim in "Anim.tu", G in "G.tu"
 View.Set ("graphics:800;480")
 View.Set ("title:Mastermind by Betty & Keisun")
+Music.PlayFileLoop ("bgm.wav")
 
 % Types
 type Player :
@@ -77,7 +78,7 @@ var dots : array 1 .. 4 of pointer to Dot
 % Player variables
 var player : Player
 % Buttons
-var btnGiveUp : int
+var btnGiveUp, btnMusic : int
 var btnRed, btnBlue, btnGreen, btnYellow, btnBlack, btnOrange : int
 var btnContinue, btnExit, btnNewGame : int
 % Mouse
@@ -100,13 +101,15 @@ var fontSans12 : int := Font.New ("sans serif:12")
 var fontMono28 : int := Font.New ("mono:28")
 var font4 : int := Font.New ("serif:30:italic")
 var font5 : int := Font.New ("serif:20:italic")
-
+%Counts
+var music : int := 0
 
 % Helper procedures
 forward proc topBar
 forward proc dot (pos : int, c : int)
 forward proc initBtn
 forward fcn mouseInBox (box : Box) : boolean
+forward procedure gameplayScreen
 
 % Show the opening screen
 procedure openingScreen
@@ -188,10 +191,15 @@ procedure newGameScreen
     % showScore
     Anim.Uncover (Anim.HORI_CENTRE, 5, 15)
     View.Set ("nooffscreenonly")
+    gameplayScreen
 end newGameScreen
 
 % Show the gameplay(main) screen
-procedure gameplayScreen
+body procedure gameplayScreen
+    cls
+    GUI.Hide (btnExit)
+    GUI.Hide (btnNewGame)
+    GUI.Hide (btnContinue)
     % Draw dots
     for i : 1 .. 4
 	new Dot, dots (i)
@@ -201,8 +209,9 @@ procedure gameplayScreen
     drawline (480, 0, 480, 440, black)
     % Show player info
     topBar
-    %% TODO: Buttons, previous guess
+    %% TODO: Done button, previous guess
     GUI.Show (btnGiveUp)
+    GUI.Show (btnMusic)
     for btn : btnRed .. btnBlack
 	GUI.SetColor (btn, grey)
 	GUI.Show (btn)
@@ -219,20 +228,32 @@ procedure gameplayScreen
 
 end gameplayScreen
 
+%Show the ending screen
+proc endingScreen
+    %% TODO: Add highest score
+    %% TODO: Add animation
+    Pic.Draw (picThank, 0, 0, picCopy)
+    Pic.Draw (picLogo, 150, 300, picCopy)
+    G.TextCtr ("Thank you for playing", 230, font4, black)
+    G.TextCtr ("By Keisun & Betty", 165, font5, black)
+    Music.PlayFileStop
+    GUI.Quit
+end endingScreen
+
 % Show the result screen
 procedure resultScreen
     cls
+    for btn : btnRed .. btnBlack
+	GUI.Hide (btn)
+    end for
+    GUI.Hide (btnMusic)
     G.TextCtr ("Name: " + player.name + "       " + "Score: " + intstr (player.score), 400, fontSans16, black)
-    drawoval (250, 320, 40, 40, black)
-    drawoval (350, 320, 40, 40, black)
-    drawoval (450, 320, 40, 40, black)
-    drawoval (550, 320, 40, 40, black)
-    btnContinue := GUI.CreateButtonFull (100, 160, 80, "CONTINUE", gameplayScreen, 40, chr (0), false)
-    btnExit := GUI.CreateButtonFull (100, 160, 80, "Exit", gameplayScreen, 40, chr (0), false)
-    btnNewGame := GUI.CreateButtonFull (100, 160, 80, "NEW GAME", gameplayScreen, 40, chr (0), false)
-    %drawbox (150, 300, 650, 400, black)
-    %drawbox (250, 25, 550, 250, black)
-    %% TODO: Result screen
+    for i : 1 .. 4
+	dots (i) -> drawPattern (i * 100 + 150, 320, 40, 40)
+    end for
+    GUI.Show (btnExit)
+    GUI.Show (btnNewGame)
+    GUI.Show (btnContinue)
 end resultScreen
 
 % Called when color button is clicked
@@ -271,11 +292,19 @@ procedure fillDot
     end for
 end fillDot
 
+proc musicOnOff
+    music := music + 1
+    if music mod 2 = 0 then
+	Music.PlayFileLoop ("bgm.wav")
+    else
+	Music.PlayFileStop
+    end if
+end musicOnOff
+
 % Show player info at the top of the screen
 body proc topBar
     drawfillbox (0, 440, maxx, maxy, cLightGreen)
     Font.Draw (player.name, 10, 454, fontSans12, black)
-    G.TextRight ("SCORE: " + intstr (player.score), 10, 454, fontSans12, black)
     G.TextCtr ("SCORE: " + intstr (player.score), 454, fontSans12, black)
 end topBar
 
@@ -286,13 +315,18 @@ body proc dot
 end dot
 
 body proc initBtn
-    btnGiveUp := GUI.CreateButton (0, 0, 40, "GIVE UP", resultScreen)
+    btnGiveUp := GUI.CreateButton (300, 0, 40, "GIVE UP", resultScreen)
     btnRed := GUI.CreateButtonFull (100, 220, 80, "RED", fillDot, 40, chr (0), false)
     btnBlue := GUI.CreateButtonFull (200, 220, 80, "BLUE", fillDot, 40, chr (0), false)
     btnGreen := GUI.CreateButtonFull (300, 220, 80, "GREEN", fillDot, 40, chr (0), false)
     btnYellow := GUI.CreateButtonFull (100, 160, 80, "YELLOW", fillDot, 40, chr (0), false)
     btnOrange := GUI.CreateButtonFull (200, 160, 80, "ORANGE", fillDot, 40, chr (0), false)
     btnBlack := GUI.CreateButtonFull (300, 160, 80, "BLACK", fillDot, 40, chr (0), false)
+    btnContinue := GUI.CreateButtonFull (350, 160, 100, "CONTINUE", gameplayScreen, 40, chr (0), false)
+    btnExit := GUI.CreateButtonFull (550, 160, 100, "Exit", endingScreen, 40, chr (0), false)
+    btnNewGame := GUI.CreateButtonFull (150, 160, 100, "NEW GAME", newGameScreen, 40, chr (0), false)
+    btnMusic := GUI.CreateButton (0, 0, 40, "Music ON/OFF", musicOnOff)
+    GUI.SetColor (btnMusic, white)
     GUI.Hide (btnGiveUp)
     GUI.Hide (btnRed)
     GUI.Hide (btnBlue)
@@ -300,6 +334,10 @@ body proc initBtn
     GUI.Hide (btnYellow)
     GUI.Hide (btnOrange)
     GUI.Hide (btnBlack)
+    GUI.Hide (btnExit)
+    GUI.Hide (btnNewGame)
+    GUI.Hide (btnContinue)
+    GUI.Hide (btnMusic)
 end initBtn
 
 body fcn mouseInBox (box : Box) : boolean
@@ -309,12 +347,12 @@ body fcn mouseInBox (box : Box) : boolean
     result false
 end mouseInBox
 
-% openingScreen
-% instructionScreen
-% newGameScreen
-player.name := "WWWWwwwwMMMMmmmm"
-player.score := 1000
 initBtn
+openingScreen
+instructionScreen
+newGameScreen
+% player.name := "WWWWwwwwMMMMmmmm"
+% player.score := 1000
 gameplayScreen
 
 % Wait for player to click buttons
