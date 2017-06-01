@@ -21,12 +21,13 @@ type Box :
 class Dot
     import Box
     export getC,
-	drawPattern,
+	drawPattern, drawPatternNoSet,
 	getBox
 
     const ORANGE : int := RGB.AddColor (1, 0.6471, 0)
 
     var c : int
+    var guessC : int := white
     var rectangle : Box
     case Rand.Int (1, 6) of
 	label 1 :
@@ -50,10 +51,15 @@ class Dot
     end getC
 
     procedure drawPattern (x, y, xRadius, yRadius : int)
-	drawfilloval (x, y, xRadius, xRadius, c)
+	drawfilloval (x, y, xRadius, yRadius, c)
 	drawoval (x, y, xRadius, yRadius, black)
 	setBox (x, y, xRadius, xRadius)
     end drawPattern
+
+    procedure drawPatternNoSet (x, y, xRadius, yRadius : int)
+	drawfilloval (x, y, xRadius, yRadius, c)
+	drawoval (x, y, xRadius, yRadius, black)
+    end drawPatternNoSet
 
     function getBox : Box
 	result rectangle
@@ -197,15 +203,20 @@ procedure gameplayScreen
     topBar
     %% TODO: Buttons, previous guess
     GUI.Show (btnGiveUp)
-    GUI.Show (btnRed)
-    GUI.Show (btnBlue)
-    GUI.Show (btnGreen)
-    GUI.Show (btnYellow)
-    GUI.Show (btnOrange)
-    GUI.Show (btnBlack)
     for btn : btnRed .. btnBlack
 	GUI.SetColor (btn, grey)
+	GUI.Show (btn)
     end for
+
+    for i : 1 .. 4
+	dots (i) -> drawPatternNoSet (i * 20 + 600, 344, 8, 8)
+    end for
+    Font.Draw ("1", 500, 336, fontSans16, black)
+    G.TextRight ("4", 20, 336, fontSans16, black)
+    for i : 1 .. 13
+	drawline (480, i * 30, maxx, i * 30, black)
+    end for
+
 end gameplayScreen
 
 % Show the result screen
