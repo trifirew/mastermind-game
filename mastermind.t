@@ -19,13 +19,9 @@ type PreviousGuess :
 	colors : array 1 .. 4 of int
 	correct : int
     end record
-type Dot :
-    record
-	answer : int
-	guess : int
-    end record
 % Game
-var dots : array 1 .. 4 of Dot
+var answer : array 1 .. 4 of int
+var guess : array 1 .. 4 of int
 var previous : array 1 .. 13 of PreviousGuess
 var guessCount : int
 % Players
@@ -56,6 +52,7 @@ var font4 : int := Font.New ("serif:30:italic")
 var font5 : int := Font.New ("serif:20:italic")
 %Counts
 var music : int := 0
+var correct : int := 0
 
 process playSoundEffect (fileName : string)
     Music.PlayFile (fileName)
@@ -157,8 +154,9 @@ body procedure gameplayScreen
     GUI.Hide (btnContinue)
     % Draw dots
     for i : 1 .. 4
-	dots (i).answer := randomC
-	dots (i).guess := white
+	answer (i) := randomC
+	answer (i) := brightred
+	guess (i) := white
 	dot (i, white)
 	%% TODO: Should not draw colour
     end for
@@ -177,8 +175,6 @@ body procedure gameplayScreen
     for i : 1 .. 13
 	drawline (480, i * 30, maxx, i * 30, black)
     end for
-    % Show previous guesses
-    showPreviousGuess
 end gameplayScreen
 
 %Show the ending screen
@@ -203,7 +199,7 @@ procedure resultScreen
     GUI.Hide (btnMusic)
     % Show the correct pattern
     for i : 1 .. 4
-	drawfilloval (i * 100 + 150, 320, 40, 40, dots (i).answer)
+	drawfilloval (i * 100 + 150, 320, 40, 40, answer (i))
 	drawoval (i * 100 + 150, 320, 40, 40, black)
     end for
     GUI.Show (btnExit)
@@ -214,7 +210,8 @@ procedure resultScreen
 	put 0
 	% Wrong sound
 	% Give up display
-    elsif previous (guessCount).correct = 4 then
+    % elsif previous (guessCount).correct = 4 then
+    elsif correct = 4 then
 	player.score += 100
 	fork playSoundEffect ("correct.wav")
 	% Correct display
@@ -255,7 +252,7 @@ procedure fillDot
     for i : 1 .. 4
 	if mouseIn (i * 92 + 10 - 32, 336 - 32, i * 92 + 10 + 32, 336 + 32) then
 	    dot (i, dotColor)
-	    dots (i).guess := dotColor
+	    guess (i) := dotColor
 	end if
     end for
     for btn : btnRed .. btnBlack
@@ -267,13 +264,19 @@ end fillDot
 procedure checkAnswer
     guessCount += 1
     previous (guessCount).correct := 0
+    correct := 0
     for i : 1 .. 4
-	previous (guessCount).colors (i) := dots (i).guess
-	if dots (i).guess = dots (i).answer then
+	previous (guessCount).colors (i) := guess (i)
+	if guess (i) = answer (i) then
 	    previous (guessCount).correct += 1
+	    correct += 1
 	end if
     end for
-    if previous (guessCount).correct = 4 then
+    % if previous (guessCount).correct = 4 then
+    %     resultScreen
+    %     return
+    % end if
+    if correct = 4 then
 	resultScreen
 	return
     end if
@@ -301,7 +304,9 @@ end topBar
 body proc showPreviousGuess
     if guessCount > 0 then
 	for i : 1 .. 4
-	    drawfilloval (i * 20 + 600, guessCount * 30 - 16, 8, 8, previous (guessCount).colors (i))
+	    % drawfilloval (i * 20 + 600, guessCount * 30 - 16, 8, 8, previous (guessCount).colors (i))
+	    % drawoval (i * 20 + 600, guessCount * 30 - 16, 8, 8, black)
+	    drawfilloval (i * 20 + 600, guessCount * 30 - 16, 8, 8, guess (i))
 	    drawoval (i * 20 + 600, guessCount * 30 - 16, 8, 8, black)
 	end for
 	Font.Draw (intstr (guessCount), 500, guessCount * 30 - 23, fontSans16, black)
