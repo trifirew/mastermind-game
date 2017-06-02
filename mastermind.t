@@ -9,11 +9,6 @@ View.Set ("title:Mastermind by Betty & Keisun")
 Music.PlayFileLoop ("bgm.wav")
 
 % Types
-type Player :
-    record
-	name : string
-	score : int
-    end record
 type PreviousGuess :
     record
 	colors : array 1 .. 4 of int
@@ -25,11 +20,15 @@ var guess : array 1 .. 4 of int
 var previous : array 1 .. 13 of PreviousGuess
 var guessCount : int
 % Players
-var player : Player
+var name : string
+var score : int := 0
+var highScore : int := 0
+var highPlayer : string := ""
 % Buttons
 var btnGiveUp, btnMusic : int
 var btnRed, btnBlue, btnGreen, btnYellow, btnBlack, btnOrange, btnDone : int
 var btnContinue, btnExit, btnNewGame : int
+var btnChance : int
 % Mouse
 var x, y, b, bn, bud : int
 % Pictures
@@ -37,6 +36,7 @@ var picBoard : int := Pic.FileNew ("Mastermind.jpg")
 var picLogo : int := Pic.FileNew ("Mastermind-Logo.jpg")
 var picInstruction : int := Pic.FileNew ("instruction.jpg")
 var picContinue : int := Pic.FileNew ("continue.gif")
+var picEnding : int := Pic.FileNew ("ending.jpg")
 var picThank : int := Pic.FileNew ("thank.jpg")
 % Colours
 var cLightGreen : int := RGB.AddColor (0.8, 0.95, 0.75)
@@ -53,6 +53,7 @@ var font5 : int := Font.New ("serif:20:italic")
 %Counts
 var music : int := 0
 var correct : int := 0
+var countPlayer : int := 0
 
 process playSoundEffect (fileName : string)
     Music.PlayFile (fileName)
@@ -97,10 +98,12 @@ end instructionScreen
 procedure newGameScreen
     var inputChar : char
     View.Set ("offscreenonly,nocursor")
+    countPlayer += 1
     % Record highest score
-    % if player.right - player.wrong > highestPlayer.right - highestPlayer.wrong then
-    %     highestPlayer := player
-    % end if
+    if score > highScore then
+	highScore := score
+	highPlayer := name
+    end if
     % Simulate a curtain closing
     Anim.Cover (cLightGreen, Anim.LEFT + Anim.RIGHT, 5, 15)
     delay (100)
@@ -109,19 +112,19 @@ procedure newGameScreen
     G.TextCtr ("Once you are done, hit ENTER", 270, fontSans16, darkgrey)
     drawfillbox (220, 210, 580, 212, darkgrey)
     View.Update
-    player.name := ""
+    name := ""
     % Simulate a "get", with input always at the vertical centre
     loop
 	locate (1, 1)
 	Input.Flush
 	inputChar := getchar
-	if inputChar = KEY_BACKSPACE and length (player.name) > 0 then
-	    player.name := player.name (1 .. * -1)
+	if inputChar = KEY_BACKSPACE and length (name) > 0 then
+	    name := name (1 .. * -1)
 	    drawfillbox (0, 0, maxx, 209, cLightGreen)
-	elsif inputChar not= KEY_BACKSPACE and inputChar not= KEY_ENTER and length (player.name) < 16 then
-	    player.name += inputChar
+	elsif inputChar not= KEY_BACKSPACE and inputChar not= KEY_ENTER and length (name) < 16 then
+	    name += inputChar
 	    drawfillbox (0, 0, maxx, 209, cLightGreen)
-	elsif inputChar = KEY_ENTER and length (player.name) > 0 and player.name (1) not= " " and player.name (*) not= " " then
+	elsif inputChar = KEY_ENTER and length (name) > 0 and name (1) not= " " and name (*) not= " " then
 	    exit
 	else
 	    drawfillbox (220, 210, 580, 212, brightred)
@@ -133,10 +136,10 @@ procedure newGameScreen
 	    G.TextCtr ("Your name should be 1 - 16 characters.", 180, fontSans12, brightred)
 	end if
 	drawfillbox (0, 213, maxx, 260, cLightGreen)
-	G.TextCtr (player.name, 220, fontMono28, black)
+	G.TextCtr (name, 220, fontMono28, black)
 	View.Update
     end loop
-    player.score := 0
+    score := 0
     % Simulate a curtain opening
     delay (500)
     cls
@@ -168,6 +171,7 @@ body procedure gameplayScreen
     %% IN PROGRESS: Done button, previous guess
     GUI.Show (btnGiveUp)
     GUI.Show (btnMusic)
+    GUI.Show (btnChance)
     for btn : btnRed .. btnDone
 	GUI.SetColor (btn, grey)
 	GUI.Show (btn)
@@ -179,7 +183,18 @@ end gameplayScreen
 
 %Show the ending screen
 proc endingScreen
+    cls
     %% TODO: Add highest score
+    Pic.Draw (picEnding, 0, 0, picCopy)
+    if countPlayer = 1 then
+	G.TextCtr ("Congratulation!", 350, fontSans40, black)
+	G.TextCtr ("Player name: " + name, 160, fontMono28, black)
+	G.TextCtr ("Final score: " + intstr (score), 100, fontMono28, black)
+    else
+
+    end if
+    delay (5000)
+    cls
     %% TODO: Add animation
     Pic.Draw (picThank, 0, 0, picCopy)
     Pic.Draw (picLogo, 150, 300, picCopy)
@@ -197,6 +212,7 @@ procedure resultScreen
 	GUI.Hide (btn)
     end for
     GUI.Hide (btnMusic)
+    GUI.Hide (btnChance)
     % Show the correct pattern
     for i : 1 .. 4
 	drawfilloval (i * 100 + 150, 320, 40, 40, answer (i))
@@ -210,9 +226,9 @@ procedure resultScreen
 	put 0
 	% Wrong sound
 	% Give up display
-    % elsif previous (guessCount).correct = 4 then
+	% elsif previous (guessCount).correct = 4 then
     elsif correct = 4 then
-	player.score += 100
+	score += 100
 	fork playSoundEffect ("correct.wav")
 	% Correct display
     elsif guessCount >= 10 then
@@ -221,7 +237,7 @@ procedure resultScreen
 	% Out of chance display
     end if
     % Show player info
-    G.TextCtr ("Name: " + player.name + "       " + "Score: " + intstr (player.score), 400, fontSans16, black)
+    G.TextCtr ("Name: " + name + "       " + "Score: " + intstr (score), 400, fontSans16, black)
     Anim.Uncover (Anim.TOP, 2, 5)
     View.Set ("nooffscreenonly")
 end resultScreen
@@ -293,11 +309,14 @@ proc musicOnOff
     end if
 end musicOnOff
 
+proc moreChance
+end moreChance
+
 % Show player info at the top of the screen
 body proc topBar
     drawfillbox (0, 440, maxx, maxy, cLightGreen)
-    Font.Draw (player.name, 10, 454, fontSans12, black)
-    G.TextCtr ("SCORE: " + intstr (player.score), 454, fontSans12, black)
+    Font.Draw (name, 10, 454, fontSans12, black)
+    G.TextCtr ("SCORE: " + intstr (score), 454, fontSans12, black)
 end topBar
 
 % Show player's previous guesses
@@ -335,6 +354,8 @@ body proc initBtn
     btnContinue := GUI.CreateButtonFull (350, 160, 100, "CONTINUE", gameplayScreen, 40, chr (0), false)
     btnExit := GUI.CreateButtonFull (550, 160, 100, "Exit", endingScreen, 40, chr (0), false)
     btnNewGame := GUI.CreateButtonFull (150, 160, 100, "NEW GAME", newGameScreen, 40, chr (0), false)
+    btnChance := GUI.CreateButtonFull (680, 440, 120, "More chances", moreChance, 40, chr (0), false)
+    GUI.SetColor (btnChance, cLightGreen)
     btnMusic := GUI.CreateButton (0, 0, 40, "Music ON/OFF", musicOnOff)
     GUI.SetColor (btnMusic, white)
     for btn : btnGiveUp .. btnMusic
@@ -373,8 +394,8 @@ initBtn
 openingScreen
 instructionScreen
 newGameScreen
-% player.name := "WWWWwwwwMMMMmmmm"
-% player.score := 1000
+% name := "WWWWwwwwMMMMmmmm"
+% score := 1000
 gameplayScreen
 
 % Wait for player to click buttons
