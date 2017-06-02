@@ -1,5 +1,5 @@
 /* Betty Zhang, Keisun Wu
- * June 2, 2017
+ * May 29, 2017
  * Mastermind Game
  */
 
@@ -14,9 +14,15 @@ type Player :
 	name : string
 	score : int
     end record
+type PreviousGuess :
+    record
+	colors : array 1 .. 4 of int
+	correct : int
+    end record
 % Game
 var answer : array 1 .. 4 of int
 var guess : array 1 .. 4 of int
+var previous : array 1 .. 13 of PreviousGuess
 var guessCount : int
 % Players
 var player : Player
@@ -32,7 +38,6 @@ var picLogo : int := Pic.FileNew ("Mastermind-Logo.jpg")
 var picInstruction : int := Pic.FileNew ("instruction.jpg")
 var picContinue : int := Pic.FileNew ("continue.gif")
 var picThank : int := Pic.FileNew ("thank.jpg")
-var picTick : int := Pic.FileNew ("tick.gif")
 % Colours
 var cLightGreen : int := RGB.AddColor (0.8, 0.95, 0.75)
 var cOrange : int := RGB.AddColor (1, 0.6471, 0)
@@ -57,6 +62,7 @@ end playSoundEffect
 forward procedure gameplayScreen
 % Helper procedures
 forward proc topBar
+forward proc showPreviousGuess
 forward proc dot (pos : int, c : int)
 forward proc initBtn
 forward fcn randomC : int
@@ -204,6 +210,7 @@ procedure resultScreen
 	put 0
 	% Wrong sound
 	% Give up display
+    % elsif previous (guessCount).correct = 4 then
     elsif correct = 4 then
 	player.score += 100
 	fork playSoundEffect ("correct.wav")
@@ -256,29 +263,24 @@ end fillDot
 % Check if player guess correctly
 procedure checkAnswer
     guessCount += 1
+    previous (guessCount).correct := 0
     correct := 0
     for i : 1 .. 4
+	previous (guessCount).colors (i) := guess (i)
 	if guess (i) = answer (i) then
+	    previous (guessCount).correct += 1
 	    correct += 1
 	end if
     end for
+    % if previous (guessCount).correct = 4 then
+    %     resultScreen
+    %     return
+    % end if
     if correct = 4 then
 	resultScreen
 	return
     end if
-    % Show player's previous guesses
-    if guessCount > 0 then
-	View.Set ("offscreenonly")
-	for i : 1 .. 4
-	    drawfilloval (i * 20 + 600, guessCount * 30 - 16, 8, 8, guess (i))
-	    drawoval (i * 20 + 600, guessCount * 30 - 16, 8, 8, black)
-	end for
-	Font.Draw ("Guess#" + intstr (guessCount), 500, guessCount * 30 - 21, fontSans12, black)
-	G.TextRight (intstr (correct), 24, guessCount * 30 - 23, fontSans16, black)
-	Pic.Draw (picTick, 780, guessCount * 30 - 24, picCopy)
-	Anim.UncoverArea (480, (guessCount - 1) * 30, maxx, guessCount * 30, Anim.BOTTOM, 1, 10)
-	View.Set ("nooffscreenonly")
-    end if
+    showPreviousGuess
 end checkAnswer
 
 % Turn on/off the background music
@@ -297,6 +299,21 @@ body proc topBar
     Font.Draw (player.name, 10, 454, fontSans12, black)
     G.TextCtr ("SCORE: " + intstr (player.score), 454, fontSans12, black)
 end topBar
+
+% Show player's previous guesses
+body proc showPreviousGuess
+    if guessCount > 0 then
+	for i : 1 .. 4
+	    % drawfilloval (i * 20 + 600, guessCount * 30 - 16, 8, 8, previous (guessCount).colors (i))
+	    % drawoval (i * 20 + 600, guessCount * 30 - 16, 8, 8, black)
+	    drawfilloval (i * 20 + 600, guessCount * 30 - 16, 8, 8, guess (i))
+	    drawoval (i * 20 + 600, guessCount * 30 - 16, 8, 8, black)
+	end for
+	Font.Draw (intstr (guessCount), 500, guessCount * 30 - 23, fontSans16, black)
+	G.TextRight (intstr (previous (guessCount).correct), 20, guessCount * 30 - 23, fontSans16, black)
+    end if
+    % end for
+end showPreviousGuess
 
 % Draw dot at a given position
 body proc dot (pos : int, c : int)
