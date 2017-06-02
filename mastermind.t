@@ -142,13 +142,7 @@ procedure newGameScreen
     player.score := 0
     % Simulate a curtain opening
     delay (500)
-    colorback (white)
     cls
-    % GUI.Show (btnGuessLetter)
-    % GUI.Show (btnGuessWord)
-    % GUI.Show (btnNewGame)
-    % GUI.Show (btnExit)
-    % showScore
     Anim.Uncover (Anim.HORI_CENTRE, 5, 15)
     View.Set ("nooffscreenonly")
     gameplayScreen
@@ -165,8 +159,6 @@ body procedure gameplayScreen
     for i : 1 .. 4
 	dots (i).answer := randomC
 	dots (i).guess := white
-	drawfilloval (i * 92 + 10, 336, 32, 32, dots (i).answer)
-	drawoval (i * 92 + 10, 336, 32, 32, black)
 	dot (i, white)
 	%% TODO: Should not draw colour
     end for
@@ -238,7 +230,8 @@ procedure resultScreen
 end resultScreen
 
 % Called when color button is clicked
-procedure fillDotClass
+% Let player to fill a dot with selected color
+procedure fillDot
     var dotColor : int
     if GUI.GetEventWidgetID = btnRed then
 	dotColor := brightred
@@ -268,8 +261,9 @@ procedure fillDotClass
     for btn : btnRed .. btnBlack
 	GUI.SetColor (btn, grey)
     end for
-end fillDotClass
+end fillDot
 
+% Check if player guess correctly
 procedure checkAnswer
     guessCount += 1
     previous (guessCount).correct := 0
@@ -303,6 +297,7 @@ body proc topBar
     G.TextCtr ("SCORE: " + intstr (player.score), 454, fontSans12, black)
 end topBar
 
+% Show player's previous guesses
 body proc showPreviousGuess
     if guessCount > 0 then
 	for i : 1 .. 4
@@ -321,14 +316,16 @@ body proc dot (pos : int, c : int)
     drawoval (pos * 92 + 10, 336, 32, 32, black)
 end dot
 
+% Initialize all buttons
+% In order to avoid "Cannot find button"
 body proc initBtn
     btnGiveUp := GUI.CreateButton (300, 0, 40, "GIVE UP", resultScreen)
-    btnRed := GUI.CreateButtonFull (100, 220, 80, "RED", fillDotClass, 40, chr (0), false)
-    btnBlue := GUI.CreateButtonFull (200, 220, 80, "BLUE", fillDotClass, 40, chr (0), false)
-    btnGreen := GUI.CreateButtonFull (300, 220, 80, "GREEN", fillDotClass, 40, chr (0), false)
-    btnYellow := GUI.CreateButtonFull (100, 160, 80, "YELLOW", fillDotClass, 40, chr (0), false)
-    btnOrange := GUI.CreateButtonFull (200, 160, 80, "ORANGE", fillDotClass, 40, chr (0), false)
-    btnBlack := GUI.CreateButtonFull (300, 160, 80, "BLACK", fillDotClass, 40, chr (0), false)
+    btnRed := GUI.CreateButtonFull (100, 220, 80, "RED", fillDot, 40, chr (0), false)
+    btnBlue := GUI.CreateButtonFull (200, 220, 80, "BLUE", fillDot, 40, chr (0), false)
+    btnGreen := GUI.CreateButtonFull (300, 220, 80, "GREEN", fillDot, 40, chr (0), false)
+    btnYellow := GUI.CreateButtonFull (100, 160, 80, "YELLOW", fillDot, 40, chr (0), false)
+    btnOrange := GUI.CreateButtonFull (200, 160, 80, "ORANGE", fillDot, 40, chr (0), false)
+    btnBlack := GUI.CreateButtonFull (300, 160, 80, "BLACK", fillDot, 40, chr (0), false)
     btnDone := GUI.CreateButton (100, 400, 300, "DONE!", checkAnswer)
     btnContinue := GUI.CreateButtonFull (350, 160, 100, "CONTINUE", gameplayScreen, 40, chr (0), false)
     btnExit := GUI.CreateButtonFull (550, 160, 100, "Exit", endingScreen, 40, chr (0), false)
@@ -340,6 +337,7 @@ body proc initBtn
     end for
 end initBtn
 
+% Return a random color
 body fcn randomC : int
     case Rand.Int (1, 6) of
 	label 1 :
@@ -357,6 +355,8 @@ body fcn randomC : int
     end case
 end randomC
 
+% Return if mouse is in an area
+% Used after buttonwait (direction, x, y, bn, bud)
 body fcn mouseIn (x1, y1, x2, y2 : int) : boolean
     if x >= x1 and x <= x2 and y >= y1 and y <= y2 then
 	result true
