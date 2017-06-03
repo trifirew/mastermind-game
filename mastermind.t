@@ -144,7 +144,6 @@ end newGameScreen
 
 % Show the gameplay(main) screen
 body procedure gameplayScreen
-    %% TODO: Animation
     View.Set ("offscreenonly")
     cls
     GUI.Hide (btnExit)
@@ -162,7 +161,6 @@ body procedure gameplayScreen
     % Show player info
     topBar
     %% TODO: Limit number of guess chance
-    %% IN PROGRESS: Done button, previous guess
     GUI.Show (btnGiveUp)
     GUI.Show (btnMusic)
     GUI.Show (btnChance)
@@ -258,6 +256,7 @@ procedure fillDot
 	GUI.SetColor (btn, grey)
     end for
     GUI.SetColor (GUI.GetEventWidgetID, dotColor)
+    %% TODO: Mouse hover animation
     buttonwait ("down", x, y, bn, bud)
     delay (200)
     % Fill the color in
@@ -338,7 +337,6 @@ body proc initBtn
     btnYellow := GUI.CreateButtonFull (100, 160, 80, "YELLOW", fillDot, 40, chr (0), false)
     btnOrange := GUI.CreateButtonFull (200, 160, 80, "ORANGE", fillDot, 40, chr (0), false)
     btnBlack := GUI.CreateButtonFull (300, 160, 80, "BLACK", fillDot, 40, chr (0), false)
-    %% TODO: Position of btnDone
     btnDone := GUI.CreateButtonFull (100, 384, 280, "DONE!", checkAnswer, 40, chr (0), false)
     btnContinue := GUI.CreateButtonFull (350, 160, 100, "CONTINUE", gameplayScreen, 40, chr (0), false)
     btnExit := GUI.CreateButtonFull (550, 160, 100, "Exit", endingScreen, 40, chr (0), false)
