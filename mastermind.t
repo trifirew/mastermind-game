@@ -110,6 +110,10 @@ procedure newGameScreen
     loop
 	locate (1, 1)
 	Input.Flush
+	% Get rid of unwanted mouse click
+	if Mouse.ButtonMoved ("down") then
+	    Mouse.ButtonWait ("down", x, y, bn, bud)
+	end if
 	inputChar := getchar
 	if inputChar = KEY_BACKSPACE and length (name) > 0 then
 	    name := name (1 .. * -1)
@@ -135,15 +139,13 @@ procedure newGameScreen
     score := 0
     % Simulate a curtain opening
     delay (500)
-    cls
-    Anim.Uncover (Anim.HORI_CENTRE, 5, 15)
-    View.Set ("nooffscreenonly")
     gameplayScreen
 end newGameScreen
 
 % Show the gameplay(main) screen
 body procedure gameplayScreen
     %% TODO: Animation
+    View.Set ("offscreenonly")
     cls
     GUI.Hide (btnExit)
     GUI.Hide (btnNewGame)
@@ -151,10 +153,9 @@ body procedure gameplayScreen
     % Draw dots
     for i : 1 .. 4
 	answer (i) := randomC
-	answer (i) := brightred
+	answer (i) := brightred %% SHOULD BE DELETED
 	guess (i) := white
 	dot (i, white)
-	%% TODO: Should not draw colour
     end for
     guessCount := 0
     drawline (480, 0, 480, 440, black)
@@ -172,6 +173,8 @@ body procedure gameplayScreen
     for i : 1 .. 13
 	drawline (480, i * 30, maxx, i * 30, black)
     end for
+    Anim.Uncover (Anim.HORI_CENTRE, 5, 15)
+    View.Set ("nooffscreenonly")
 end gameplayScreen
 
 %Show the ending screen
@@ -184,7 +187,7 @@ proc endingScreen
 	G.TextCtr ("Player name: " + name, 160, fontMono28, black)
 	G.TextCtr ("Final score: " + intstr (score), 100, fontMono28, black)
     else
-
+	%% TODO: Show highest score
     end if
     delay (5000)
     cls
@@ -257,12 +260,14 @@ procedure fillDot
     GUI.SetColor (GUI.GetEventWidgetID, dotColor)
     buttonwait ("down", x, y, bn, bud)
     delay (200)
+    % Fill the color in
     for i : 1 .. 4
 	if mouseIn (i * 92 + 10 - 32, 336 - 32, i * 92 + 10 + 32, 336 + 32) then
 	    dot (i, dotColor)
 	    guess (i) := dotColor
 	end if
     end for
+    % Reset button color
     for btn : btnRed .. btnBlack
 	GUI.SetColor (btn, grey)
     end for
@@ -306,6 +311,7 @@ proc musicOnOff
     end if
 end musicOnOff
 
+% Give player one more chance to guess
 proc moreChance
 end moreChance
 
@@ -325,7 +331,7 @@ end dot
 % Initialize all buttons
 % In order to avoid "Cannot find button"
 body proc initBtn
-    btnGiveUp := GUI.CreateButton (300, 0, 40, "GIVE UP", resultScreen)
+    btnGiveUp := GUI.CreateButton (400, 0, 80, "GIVE UP", resultScreen)
     btnRed := GUI.CreateButtonFull (100, 220, 80, "RED", fillDot, 40, chr (0), false)
     btnBlue := GUI.CreateButtonFull (200, 220, 80, "BLUE", fillDot, 40, chr (0), false)
     btnGreen := GUI.CreateButtonFull (300, 220, 80, "GREEN", fillDot, 40, chr (0), false)
@@ -333,7 +339,7 @@ body proc initBtn
     btnOrange := GUI.CreateButtonFull (200, 160, 80, "ORANGE", fillDot, 40, chr (0), false)
     btnBlack := GUI.CreateButtonFull (300, 160, 80, "BLACK", fillDot, 40, chr (0), false)
     %% TODO: Position of btnDone
-    btnDone := GUI.CreateButton (100, 400, 300, "DONE!", checkAnswer)
+    btnDone := GUI.CreateButtonFull (100, 384, 280, "DONE!", checkAnswer, 40, chr (0), false)
     btnContinue := GUI.CreateButtonFull (350, 160, 100, "CONTINUE", gameplayScreen, 40, chr (0), false)
     btnExit := GUI.CreateButtonFull (550, 160, 100, "Exit", endingScreen, 40, chr (0), false)
     btnNewGame := GUI.CreateButtonFull (150, 160, 100, "NEW GAME", newGameScreen, 40, chr (0), false)
@@ -374,12 +380,12 @@ body fcn mouseIn (x1, y1, x2, y2 : int) : boolean
 end mouseIn
 
 initBtn
-openingScreen
-instructionScreen
+% openingScreen
+% instructionScreen
 newGameScreen
 % name := "WWWWwwwwMMMMmmmm"
 % score := 1000
-gameplayScreen
+% gameplayScreen
 
 % Wait for player to click buttons
 loop
