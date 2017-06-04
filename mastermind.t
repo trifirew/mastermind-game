@@ -107,6 +107,7 @@ procedure newGameScreen
     View.Update
     name := ""
     % Simulate a "get", with input always at the vertical centre
+    %% TODO: Return to instruction/opening screen (ESC/Mouse click)
     loop
 	locate (1, 1)
 	Input.Flush
@@ -378,8 +379,8 @@ body fcn mouseIn (x1, y1, x2, y2 : int) : boolean
 end mouseIn
 
 initBtn
-% openingScreen
-% instructionScreen
+openingScreen
+instructionScreen
 newGameScreen
 % name := "WWWWwwwwMMMMmmmm"
 % score := 1000
