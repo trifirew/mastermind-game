@@ -198,14 +198,11 @@ body procedure gameplayScreen
 	GUI.SetColor (btn, grey)
 	GUI.Show (btn)
     end for
-    % for i : 1 .. 14
-    %     drawline (480, i * 30, maxx, i * 30, black)
-    % end for
     Anim.Uncover (Anim.HORI_CENTRE, 5, 15)
     % Draw dots
     for decreasing i : 4 .. 1
 	answer (i) := randomC
-	answer (i) := brightred     %% SHOULD BE DELETED
+	% answer (i) := brightred     %% FOR TESTING
 	guess (i) := white
 	for j : 0 .. i * 92 + 10 by 2
 	    drawoval (j, 328, 32, 32, black)
@@ -449,7 +446,7 @@ end mouseIn
 initBtn
 openingScreen
 instructionScreen
-% For testing
+%% FOR TESTING
 % newGameScreen
 % name := "WWWWwwwwMMMMmmmm"
 % score := 0
@@ -457,6 +454,7 @@ instructionScreen
 
 % Wait for player to click buttons
 loop
+    %% FOR TESTING
     % mousewhere (x, y, b)
     % locate (1, 1)
     % put x, " ", y, " ", b
