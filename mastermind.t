@@ -33,9 +33,20 @@ var picEnding : int := Pic.FileNew ("ending.jpg")
 var picThank : int := Pic.FileNew ("thank.jpg")
 var picTick : int := Pic.FileNew ("tick.gif")
 var picLeaderBoard : int := Pic.FileNew ("leaderboard.gif")
-% Colours
+% Colors
 var cLightGreen : int := RGB.AddColor (0.8, 0.95, 0.75)
 var cOrange : int := RGB.AddColor (1, 0.6471, 0)
+var colors : array 1 .. 9 of int
+colors (1) := brightred
+colors (2) := brightblue
+colors (3) := brightgreen
+colors (4) := yellow
+colors (5) := cOrange
+colors (6) := black
+%% TODO: Change colors
+colors (7) := white
+colors (8) := white
+colors (9) := white
 % Fonts
 var fontSans40 : int := Font.New ("sans serif:40")
 var fontSans36 : int := Font.New ("sans serif:36")
@@ -62,7 +73,6 @@ forward procedure gameplayScreen
 forward proc topBar
 forward proc dot (pos : int, c : int)
 forward proc initBtn
-forward fcn randomC : int
 forward fcn mouseIn (x1, y1, x2, y2 : int) : boolean
 
 % Show the opening screen
@@ -98,7 +108,6 @@ body procedure newGameScreen
     var inputChar : char
     var onInstructionBtn : boolean := false
     View.Set ("offscreenonly,nocursor")
-    countPlayer += 1
     % Record highest score
     if score > highScore then
 	highScore := score
@@ -173,6 +182,7 @@ body procedure newGameScreen
 	View.Update
     end loop
     score := 0
+    countPlayer += 1
     delay (500)
     gameplayScreen
 end newGameScreen
@@ -184,12 +194,10 @@ body procedure gameplayScreen
     GUI.Hide (btnExit)
     GUI.Hide (btnNewGame)
     GUI.Hide (btnContinue)
-    guessCount := 0
     % Show player info
     topBar
     drawline (480, 0, 480, 440, darkgrey)
     drawline (0, 440, maxx, 440, darkgrey)
-    %% TODO: Limit number of guess chance
     GUI.Show (btnGiveUp)
     GUI.Show (btnMusic)
     GUI.Show (btnChance)
@@ -199,23 +207,39 @@ body procedure gameplayScreen
 	GUI.Show (btn)
     end for
     Anim.Uncover (Anim.HORI_CENTRE, 5, 15)
+    % Reset guess and correct counter
+    guessCount := 0
+    correct := 0
+    % Set a random color for each dot
+    for i : 1 .. 4
+	answer (i) := colors (Rand.Int (1, 6))
+	guess (i) := white
+	answer (i) := brightred     %% FOR TESTING
+    end for
     % Draw dots
     for decreasing i : 4 .. 1
-	answer (i) := randomC
-	% answer (i) := brightred     %% FOR TESTING
-	guess (i) := white
 	for j : 0 .. i * 92 + 10 by 2
 	    drawoval (j, 328, 32, 32, black)
 	    View.Update
 	    delay (5)
 	    drawfilloval (j, 328, 32, 32, white)
+	    % Allow player to skip animation by clicking mouse
+	    if buttonmoved ("down") then
+		buttonwait ("down", x, y, bn, bud)
+		for k : 1 .. 4
+		    dot (k, white)
+		end for
+		View.Update
+		View.Set ("nooffscreenonly")
+		return
+	    end if
 	end for
 	dot (i, white)
     end for
     View.Set ("nooffscreenonly")
 end gameplayScreen
 
-%Show the ending screen
+% Show the ending screen
 proc endingScreen
     cls
     if score > highScore then
@@ -246,12 +270,12 @@ end endingScreen
 % Show the result screen
 procedure resultScreen
     View.Set ("offscreenonly")
-    cls
     for btn : btnRed .. btnBlack
 	GUI.Hide (btn)
     end for
     GUI.Hide (btnMusic)
     GUI.Hide (btnChance)
+    drawfillbox (0, 0, maxx, maxy, RGB.AddColor (0.95, 0.95, 0.95))
     % Show the correct pattern
     for i : 1 .. 4
 	drawfilloval (i * 100 + 150, 320, 40, 40, answer (i))
@@ -415,24 +439,6 @@ body proc initBtn
 	GUI.Hide (btn)
     end for
 end initBtn
-
-% Return a random color
-body fcn randomC : int
-    case Rand.Int (1, 6) of
-	label 1 :
-	    result brightred
-	label 2 :
-	    result brightblue
-	label 3 :
-	    result brightgreen
-	label 4 :
-	    result yellow
-	label 5 :
-	    result cOrange
-	label 6 :
-	    result black
-    end case
-end randomC
 
 % Return if mouse is in an area
 % Used after buttonwait (direction, x, y, bn, bud)
