@@ -32,6 +32,7 @@ var picContinue : int := Pic.FileNew ("continue.gif")
 var picEnding : int := Pic.FileNew ("ending.jpg")
 var picThank : int := Pic.FileNew ("thank.jpg")
 var picTick : int := Pic.FileNew ("tick.gif")
+var picLeaderBoard : int := Pic.FileNew ("leaderboard.gif")
 % Colours
 var cLightGreen : int := RGB.AddColor (0.8, 0.95, 0.75)
 var cOrange : int := RGB.AddColor (1, 0.6471, 0)
@@ -79,7 +80,7 @@ body procedure instructionScreen
     G.TextCtr ("Instruction", 400, fontSans36, black)
     G.TextCtr ("The computer will randomly choose 4 colours from green, red, blue, yellow, orange and black.", 330, fontSans12, black)
     G.TextCtr ("You guess 4 colours at each turn, the computer then tells you how many you guessed correctly", 300, fontSans12, black)
-    G.TextCtr ("The colour and the position must be correct, but it doesn'y tell you which one is correct.", 270, fontSans12, black)
+    G.TextCtr ("The colour and the position must be correct, but it doesn't tell you which one is correct.", 270, fontSans12, black)
     G.TextCtr ("You have 10 chances total to get the correct pattern.", 240, fontSans12, black)
     G.TextCtr ("Hope you enjoy!", 180, fontSans24, black)
     Pic.Draw (picContinue, 600, 30, picMerge)
@@ -219,7 +220,9 @@ proc endingScreen
 	G.TextCtr ("Player name: " + name, 160, fontMono28, black)
 	G.TextCtr ("Final score: " + intstr (score), 100, fontMono28, black)
     else
-	%% TODO: Show highest score
+	Pic.Draw (picLeaderBoard, 300, 250, picMerge)
+	G.TextCtr ("Highest score: " + intstr (highScore), 160, fontMono28, black)
+	G.TextCtr ("Player name: " + highPlayer, 100, fontMono28, black)
     end if
     delay (5000)
     cls
@@ -250,8 +253,8 @@ procedure resultScreen
     GUI.Show (btnNewGame)
     GUI.Show (btnContinue)
     % Different display for win/lose
-    if guessCount = 0 then
-	put 0
+    if correct not= 4 and guessCount < 10 then
+	score -= 100
 	% Wrong sound
 	% Give up display
     elsif correct = 4 then
@@ -259,7 +262,7 @@ procedure resultScreen
 	fork playSoundEffect ("correct.wav")
 	% Correct display
     elsif guessCount >= 10 then
-	put 10
+	score -= 100
 	% Wrong sound
 	% Out of chance display
     end if
@@ -385,6 +388,7 @@ end dot
 % In order to avoid "Cannot find button"
 body proc initBtn
     btnGiveUp := GUI.CreateButton (400, 0, 80, "GIVE UP", resultScreen)
+    GUI.SetColor (btnGiveUp, white)
     btnRed := GUI.CreateButtonFull (100, 220, 80, "RED", fillDot, 40, chr (0), false)
     btnBlue := GUI.CreateButtonFull (200, 220, 80, "BLUE", fillDot, 40, chr (0), false)
     btnGreen := GUI.CreateButtonFull (300, 220, 80, "GREEN", fillDot, 40, chr (0), false)
