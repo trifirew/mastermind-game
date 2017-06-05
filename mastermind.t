@@ -221,7 +221,10 @@ end gameplayScreen
 %Show the ending screen
 proc endingScreen
     cls
-    %% TODO: Add highest score
+    if score > highScore then
+	highScore := score
+	highPlayer := name
+    end if
     Pic.Draw (picEnding, 0, 0, picCopy)
     if countPlayer = 1 then
 	G.TextCtr ("Congratulation!", 350, fontSans40, black)
