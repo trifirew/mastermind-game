@@ -75,6 +75,7 @@ end openingScreen
 
 % Show the instruction screen
 body procedure instructionScreen
+    View.Set ("offscreenonly")
     Pic.Draw (picInstruction, 0, 0, picCopy)
     G.TextCtr ("Instruction", 400, fontSans36, black)
     G.TextCtr ("The computer will randomly choose 4 colours from green, red, blue, yellow, orange and black.", 330, fontSans12, black)
@@ -83,6 +84,7 @@ body procedure instructionScreen
     G.TextCtr ("You have 10 chances total to get the correct pattern.", 240, fontSans12, black)
     G.TextCtr ("Hope you enjoy!", 180, fontSans24, black)
     Pic.Draw (picContinue, 600, 30, picMerge)
+    Anim.Uncover (Anim.TOP, 5, 15)
     loop
 	buttonwait ("down", x, y, bn, bud)
 	exit when x >= 600 and x <= 750 and y >= 30 and y <= 100
@@ -110,7 +112,6 @@ body procedure newGameScreen
     Anim.UncoverArea (220, 210, 580, 330, Anim.TOP, 3, 15)
     Anim.UncoverArea (12, 12, 130, 32, Anim.BOTTOM, 2, 15)
     name := ""
-    %% TODO: Return to instruction/opening screen (ESC/Mouse click)
     Input.Flush
     loop
 	if Input.hasch then
@@ -182,17 +183,11 @@ body procedure gameplayScreen
     GUI.Hide (btnExit)
     GUI.Hide (btnNewGame)
     GUI.Hide (btnContinue)
-    % Draw dots
-    for i : 1 .. 4
-	answer (i) := randomC
-	answer (i) := brightred     %% SHOULD BE DELETED
-	guess (i) := white
-	dot (i, white)
-    end for
     guessCount := 0
-    drawline (480, 0, 480, 440, black)
     % Show player info
     topBar
+    drawline (480, 0, 480, 440, darkgrey)
+    drawline (0, 440, maxx, 440, darkgrey)
     %% TODO: Limit number of guess chance
     GUI.Show (btnGiveUp)
     GUI.Show (btnMusic)
@@ -202,10 +197,23 @@ body procedure gameplayScreen
 	GUI.SetColor (btn, grey)
 	GUI.Show (btn)
     end for
-    for i : 1 .. 13
-	drawline (480, i * 30, maxx, i * 30, black)
-    end for
+    % for i : 1 .. 14
+    %     drawline (480, i * 30, maxx, i * 30, black)
+    % end for
     Anim.Uncover (Anim.HORI_CENTRE, 5, 15)
+    % Draw dots
+    for decreasing i : 4 .. 1
+	answer (i) := randomC
+	answer (i) := brightred     %% SHOULD BE DELETED
+	guess (i) := white
+	for j : 0 .. i * 92 + 10 by 2
+	    drawoval (j, 328, 32, 32, black)
+	    View.Update
+	    delay (5)
+	    drawfilloval (j, 328, 32, 32, white)
+	end for
+	dot (i, white)
+    end for
     View.Set ("nooffscreenonly")
 end gameplayScreen
 
@@ -252,7 +260,7 @@ procedure resultScreen
     % Different display for win/lose
     if guessCount = 0 then
 	put 0
-	% Wrong sound
+	fork playSoundEffect ("wrong.wav")
 	% Give up display
     elsif correct = 4 then
 	score += 100
@@ -260,7 +268,7 @@ procedure resultScreen
 	% Correct display
     elsif guessCount >= 10 then
 	put 10
-	% Wrong sound
+	fork playSoundEffect ("wrong.wav")
 	% Out of chance display
     end if
     % Show player info
@@ -296,9 +304,9 @@ procedure fillDot
 	mousewhere (x, y, b)
 	exit when b = 1
 	for i : 1 .. 4
-	    if mouseIn (i * 92 + 10 - 32, 336 - 32, i * 92 + 10 + 32, 336 + 32) then
-		drawfilloval (i * 92 + 10, 336, 32, 32, dotColor)
-		drawfilloval (i * 92 + 10, 336, 28, 28, guess (i))
+	    if mouseIn (i * 92 + 10 - 32, 328 - 32, i * 92 + 10 + 32, 328 + 32) then
+		drawfilloval (i * 92 + 10, 328, 32, 32, dotColor)
+		drawfilloval (i * 92 + 10, 328, 28, 28, guess (i))
 	    else
 		dot (i, guess (i))
 	    end if
@@ -310,7 +318,7 @@ procedure fillDot
     % Check if all the dots are filled
     GUI.Enable (btnDone)
     for i : 1 .. 4
-	if mouseIn (i * 92 + 10 - 32, 336 - 32, i * 92 + 10 + 32, 336 + 32) then
+	if mouseIn (i * 92 + 10 - 32, 328 - 32, i * 92 + 10 + 32, 328 + 32) then
 	    dot (i, dotColor)
 	    guess (i) := dotColor
 	end if
@@ -335,22 +343,22 @@ procedure checkAnswer
 	    correct += 1
 	end if
     end for
-    if correct = 4 then
-	resultScreen
-	return
-    end if
     % Show player's previous guesses
     if guessCount > 0 then
 	View.Set ("offscreenonly")
 	for i : 1 .. 4
-	    drawfilloval (i * 20 + 600, guessCount * 30 - 16, 8, 8, guess (i))
-	    drawoval (i * 20 + 600, guessCount * 30 - 16, 8, 8, black)
+	    drawfilloval (i * 20 + 600, guessCount * 33 - 14, 8, 8, guess (i))
+	    drawoval (i * 20 + 600, guessCount * 33 - 14, 8, 8, black)
 	end for
-	Font.Draw ("Guess#" + intstr (guessCount), 500, guessCount * 30 - 21, fontSans12, black)
-	G.TextRight (intstr (correct), 24, guessCount * 30 - 23, fontSans16, black)
-	Pic.Draw (picTick, 780, guessCount * 30 - 24, picCopy)
-	Anim.UncoverArea (480, (guessCount - 1) * 30, maxx, guessCount * 30, Anim.BOTTOM, 1, 10)
+	Font.Draw ("Guess#" + intstr (guessCount), 500, guessCount * 33 - 19, fontSans12, black)
+	G.TextRight (intstr (correct), 24, guessCount * 33 - 21, fontSans16, black)
+	Pic.Draw (picTick, 780, guessCount * 33 - 22, picCopy)
+	Anim.UncoverArea (480, (guessCount - 1) * 33, maxx, guessCount * 33, Anim.BOTTOM, 1, 10)
 	View.Set ("nooffscreenonly")
+    end if
+    if correct = 4 or guessCount >= 10 then
+	resultScreen
+	return
     end if
 end checkAnswer
 
@@ -377,8 +385,8 @@ end topBar
 
 % Draw dot at a given position
 body proc dot (pos : int, c : int)
-    drawfilloval (pos * 92 + 10, 336, 32, 32, c)
-    drawoval (pos * 92 + 10, 336, 32, 32, black)
+    drawfilloval (pos * 92 + 10, 328, 32, 32, c)
+    drawoval (pos * 92 + 10, 328, 32, 32, black)
 end dot
 
 % Initialize all buttons
@@ -442,5 +450,8 @@ instructionScreen
 
 % Wait for player to click buttons
 loop
+    % mousewhere (x, y, b)
+    % locate (1, 1)
+    % put x, " ", y, " ", b
     exit when GUI.ProcessEvent
 end loop
