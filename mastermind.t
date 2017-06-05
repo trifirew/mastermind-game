@@ -1,5 +1,5 @@
 /* Betty Zhang, Keisun Wu
- * June 2, 2017
+ * June 4, 2017
  * Mastermind Game
  */
 
@@ -46,14 +46,16 @@ var font4 : int := Font.New ("serif:30:italic")
 var font5 : int := Font.New ("serif:20:italic")
 % Counts
 var music : int := 0
-var correct : int := 0
 var countPlayer : int := 0
+var correct : int := 0
 
 process playSoundEffect (fileName : string)
     Music.PlayFile (fileName)
 end playSoundEffect
 
 % Pre-declared procedures
+forward procedure instructionScreen
+forward procedure newGameScreen
 forward procedure gameplayScreen
 % Helper procedures
 forward proc topBar
@@ -72,7 +74,7 @@ procedure openingScreen
 end openingScreen
 
 % Show the instruction screen
-procedure instructionScreen
+body procedure instructionScreen
     Pic.Draw (picInstruction, 0, 0, picCopy)
     G.TextCtr ("Instruction", 400, fontSans36, black)
     G.TextCtr ("The computer will randomly choose 4 colours from green, red, blue, yellow, orange and black.", 330, fontSans12, black)
@@ -85,11 +87,13 @@ procedure instructionScreen
 	buttonwait ("down", x, y, bn, bud)
 	exit when x >= 600 and x <= 750 and y >= 30 and y <= 100
     end loop
+    newGameScreen
 end instructionScreen
 
 % Start a new game, let the player enter their name
-procedure newGameScreen
+body procedure newGameScreen
     var inputChar : char
+    var onInstructionBtn : boolean := false
     View.Set ("offscreenonly,nocursor")
     countPlayer += 1
     % Record highest score
@@ -97,48 +101,76 @@ procedure newGameScreen
 	highScore := score
 	highPlayer := name
     end if
-    % Simulate a curtain closing
-    Anim.Cover (cLightGreen, Anim.LEFT + Anim.RIGHT, 5, 15)
-    delay (100)
     % Get player name
+    Anim.Cover (cLightGreen, Anim.LEFT + Anim.RIGHT, 5, 15)
     G.TextCtr ("Enter your name", 300, fontSans24, black)
     G.TextCtr ("Once you are done, hit ENTER", 270, fontSans16, darkgrey)
     drawfillbox (220, 210, 580, 212, darkgrey)
-    View.Update
+    Font.Draw ("Read Instruction", 16, 16, fontSans12, black)
+    Anim.UncoverArea (220, 210, 580, 330, Anim.TOP, 3, 15)
+    Anim.UncoverArea (12, 12, 130, 32, Anim.BOTTOM, 2, 15)
     name := ""
-    % Simulate a "get", with input always at the vertical centre
     %% TODO: Return to instruction/opening screen (ESC/Mouse click)
+    Input.Flush
     loop
-	locate (1, 1)
-	Input.Flush
-	% Get rid of unwanted mouse click
-	if Mouse.ButtonMoved ("down") then
-	    Mouse.ButtonWait ("down", x, y, bn, bud)
-	end if
-	inputChar := getchar
-	if inputChar = KEY_BACKSPACE and length (name) > 0 then
-	    name := name (1 .. * -1)
-	    drawfillbox (0, 0, maxx, 209, cLightGreen)
-	elsif inputChar not= KEY_BACKSPACE and inputChar not= KEY_ENTER and length (name) < 16 then
-	    name += inputChar
-	    drawfillbox (0, 0, maxx, 209, cLightGreen)
-	elsif inputChar = KEY_ENTER and length (name) > 0 and name (1) not= " " and name (*) not= " " then
-	    exit
-	else
-	    drawfillbox (220, 210, 580, 212, brightred)
+	if Input.hasch then
+	    % Simulate a "get", with input always at the vertical centre
+	    inputChar := getchar
+	    Input.Flush
+	    if inputChar = KEY_BACKSPACE and length (name) > 0 then
+		name := name (1 .. * -1)
+		drawfillbox (200, 0, 600, 209, cLightGreen)
+	    elsif inputChar not= KEY_BACKSPACE and inputChar not= KEY_ENTER and length (name) < 16 then
+		name += inputChar
+		drawfillbox (200, 0, 600, 209, cLightGreen)
+	    elsif inputChar = KEY_ENTER and length (name) > 0 and name (1) not= " " and name (*) not= " " then
+		exit
+	    else
+		drawfillbox (220, 210, 580, 212, brightred)
+		View.Update
+		delay (200)
+		drawfillbox (220, 210, 580, 212, darkgrey)
+		drawfillbox (200, 0, 600, 209, cLightGreen)
+		G.TextCtr ("You should not start or end your name with a space.", 160, fontSans12, brightred)
+		G.TextCtr ("Your name should be 1 - 16 characters.", 180, fontSans12, brightred)
+	    end if
 	    View.Update
-	    delay (200)
-	    drawfillbox (220, 210, 580, 212, darkgrey)
-	    drawfillbox (0, 0, maxx, 209, cLightGreen)
-	    G.TextCtr ("You should not start or end your name with a space.", 160, fontSans12, brightred)
-	    G.TextCtr ("Your name should be 1 - 16 characters.", 180, fontSans12, brightred)
+	end if
+	% Allow user to read instruction again
+	mousewhere (x, y, b)
+	if mouseIn (12, 12, 130, 32) then
+	    drawfillbox (12, 12, 130, 32, black)
+	    Font.Draw ("Read Instruction", 16, 16, fontSans12, cLightGreen)
+	    % If the mouse is on the button but wasn't before, update the button
+	    % Prevent the screen from keeping updating
+	    if not onInstructionBtn then
+		Anim.UncoverArea (12, 12, 130, 32, Anim.BOTTOM, 2, 15)
+		onInstructionBtn := true
+	    end if
+	else
+	    drawfillbox (12, 12, 130, 32, cLightGreen)
+	    Font.Draw ("Read Instruction", 16, 16, fontSans12, black)
+	    % If the mouse isn't on the button but was before, update the button
+	    % Prevent the screen from keeping updating
+	    if onInstructionBtn then
+		Anim.UncoverArea (12, 12, 130, 32, Anim.BOTTOM, 2, 15)
+		onInstructionBtn := false
+	    end if
+	end if
+	if Mouse.ButtonMoved ("down") then
+	    % Dump this click
+	    Mouse.ButtonWait ("down", x, y, bn, bud)
+	    if mouseIn (12, 12, 130, 32) then
+		View.Set ("nooffscreenonly")
+		instructionScreen
+		return
+	    end if
 	end if
 	drawfillbox (0, 213, maxx, 260, cLightGreen)
 	G.TextCtr (name, 220, fontMono28, black)
 	View.Update
     end loop
     score := 0
-    % Simulate a curtain opening
     delay (500)
     gameplayScreen
 end newGameScreen
@@ -153,7 +185,7 @@ body procedure gameplayScreen
     % Draw dots
     for i : 1 .. 4
 	answer (i) := randomC
-	answer (i) := brightred %% SHOULD BE DELETED
+	answer (i) := brightred     %% SHOULD BE DELETED
 	guess (i) := white
 	dot (i, white)
     end for
@@ -165,6 +197,7 @@ body procedure gameplayScreen
     GUI.Show (btnGiveUp)
     GUI.Show (btnMusic)
     GUI.Show (btnChance)
+    GUI.Disable (btnDone)
     for btn : btnRed .. btnDone
 	GUI.SetColor (btn, grey)
 	GUI.Show (btn)
@@ -257,26 +290,46 @@ procedure fillDot
 	GUI.SetColor (btn, grey)
     end for
     GUI.SetColor (GUI.GetEventWidgetID, dotColor)
-    %% TODO: Mouse hover animation
+    % When player hover the mouse over the dot, preview the color
+    View.Set ("offscreenonly")
+    loop
+	mousewhere (x, y, b)
+	exit when b = 1
+	for i : 1 .. 4
+	    if mouseIn (i * 92 + 10 - 32, 336 - 32, i * 92 + 10 + 32, 336 + 32) then
+		drawfilloval (i * 92 + 10, 336, 32, 32, dotColor)
+		drawfilloval (i * 92 + 10, 336, 28, 28, guess (i))
+	    else
+		dot (i, guess (i))
+	    end if
+	end for
+	View.Update
+    end loop
     buttonwait ("down", x, y, bn, bud)
-    delay (200)
-    % Fill the color in
+    % Fill the color in and
+    % Check if all the dots are filled
+    GUI.Enable (btnDone)
     for i : 1 .. 4
 	if mouseIn (i * 92 + 10 - 32, 336 - 32, i * 92 + 10 + 32, 336 + 32) then
 	    dot (i, dotColor)
 	    guess (i) := dotColor
+	end if
+	if guess (i) = white then
+	    GUI.Disable (btnDone)
 	end if
     end for
     % Reset button color
     for btn : btnRed .. btnBlack
 	GUI.SetColor (btn, grey)
     end for
+    View.Update
+    View.Set ("nooffscreenonly")
 end fillDot
 
 % Check if player guess correctly
 procedure checkAnswer
-    guessCount += 1
     correct := 0
+    guessCount += 1
     for i : 1 .. 4
 	if guess (i) = answer (i) then
 	    correct += 1
@@ -381,13 +434,13 @@ end mouseIn
 initBtn
 openingScreen
 instructionScreen
-newGameScreen
+% For testing
+% newGameScreen
 % name := "WWWWwwwwMMMMmmmm"
-% score := 1000
+% score := 0
 % gameplayScreen
 
 % Wait for player to click buttons
 loop
-    % mousewhere (x, y, b)
     exit when GUI.ProcessEvent
 end loop
