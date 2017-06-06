@@ -1,5 +1,5 @@
 /* Betty Zhang, Keisun Wu
- * June 4, 2017
+ * June 6, 2017
  * Mastermind Game
  */
 
@@ -15,11 +15,12 @@ var guessCount : int
 % Players
 var name : string
 var score : int := 0
-var highScore : int := 0
+var highScore : int := minint
 var highPlayer : string := ""
 % Buttons
 var btnGiveUp, btnMusic : int
 var btnRed, btnBlue, btnGreen, btnYellow, btnBlack, btnOrange, btnDone : int
+var btnBrown, btnPurple, btnPink : int
 var btnContinue, btnExit, btnNewGame : int
 var btnChance : int
 % Mouse
@@ -44,9 +45,9 @@ colors (4) := yellow
 colors (5) := cOrange
 colors (6) := black
 %% TODO: Change colors
-colors (7) := white
-colors (8) := white
-colors (9) := white
+colors (7) := RGB.AddColor (0.549, 0.2745, 0)
+colors (8) := purple
+colors (9) := RGB.AddColor (1, 0.451, 1)
 % Fonts
 var fontSans40 : int := Font.New ("sans serif:40")
 var fontSans36 : int := Font.New ("sans serif:36")
@@ -109,7 +110,7 @@ body procedure newGameScreen
     var onInstructionBtn : boolean := false
     View.Set ("offscreenonly,nocursor")
     % Record highest score
-    if score > highScore then
+    if score > highScore and countPlayer > 0 then
 	highScore := score
 	highPlayer := name
     end if
@@ -206,15 +207,19 @@ body procedure gameplayScreen
 	GUI.SetColor (btn, grey)
 	GUI.Show (btn)
     end for
+    for btn : btnBrown .. btnPink
+	GUI.SetColor (btn, grey)
+	GUI.Show (btn)
+    end for
     Anim.Uncover (Anim.HORI_CENTRE, 5, 15)
     % Reset guess and correct counter
     guessCount := 0
     correct := 0
     % Set a random color for each dot
     for i : 1 .. 4
-	answer (i) := colors (Rand.Int (1, 6))
+	answer (i) := colors (Rand.Int (1, 9))
 	guess (i) := white
-	answer (i) := brightred     %% FOR TESTING
+	answer (i) := brightred      %% FOR TESTING
     end for
     % Draw dots
     for decreasing i : 4 .. 1
@@ -309,19 +314,25 @@ end resultScreen
 procedure fillDot
     var dotColor : int
     if GUI.GetEventWidgetID = btnRed then
-	dotColor := brightred
+	dotColor := colors (1)
     elsif GUI.GetEventWidgetID = btnBlue then
-	dotColor := brightblue
+	dotColor := colors (2)
     elsif GUI.GetEventWidgetID = btnGreen then
-	dotColor := brightgreen
+	dotColor := colors (3)
     elsif GUI.GetEventWidgetID = btnYellow then
-	dotColor := yellow
+	dotColor := colors (4)
     elsif GUI.GetEventWidgetID = btnOrange then
-	dotColor := cOrange
+	dotColor := colors (5)
     elsif GUI.GetEventWidgetID = btnBlack then
-	dotColor := black
+	dotColor := colors (6)
+    elsif GUI.GetEventWidgetID = btnBrown then
+	dotColor := colors (7)
+    elsif GUI.GetEventWidgetID = btnPurple then
+	dotColor := colors (8)
+    elsif GUI.GetEventWidgetID = btnPink then
+	dotColor := colors (9)
     end if
-    for btn : btnRed .. btnBlack
+    for btn : btnRed .. btnPink
 	GUI.SetColor (btn, grey)
     end for
     GUI.SetColor (GUI.GetEventWidgetID, dotColor)
@@ -354,7 +365,7 @@ procedure fillDot
 	end if
     end for
     % Reset button color
-    for btn : btnRed .. btnBlack
+    for btn : btnRed .. btnPink
 	GUI.SetColor (btn, grey)
     end for
     View.Update
@@ -428,6 +439,9 @@ body proc initBtn
     btnOrange := GUI.CreateButtonFull (200, 160, 80, "ORANGE", fillDot, 40, chr (0), false)
     btnBlack := GUI.CreateButtonFull (300, 160, 80, "BLACK", fillDot, 40, chr (0), false)
     btnDone := GUI.CreateButtonFull (100, 384, 280, "DONE!", checkAnswer, 40, chr (0), false)
+    btnBrown := GUI.CreateButtonFull (100, 100, 80, "BROWN", fillDot, 40, chr (0), false)
+    btnPurple := GUI.CreateButtonFull (200, 100, 80, "PURPLE", fillDot, 40, chr (0), false)
+    btnPink := GUI.CreateButtonFull (300, 100, 80, "PINK", fillDot, 40, chr (0), false)
     btnContinue := GUI.CreateButtonFull (350, 160, 100, "CONTINUE", gameplayScreen, 40, chr (0), false)
     btnExit := GUI.CreateButtonFull (550, 160, 100, "Exit", endingScreen, 40, chr (0), false)
     btnNewGame := GUI.CreateButtonFull (150, 160, 100, "NEW GAME", newGameScreen, 40, chr (0), false)
