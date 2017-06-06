@@ -12,6 +12,7 @@ Music.PlayFileLoop ("bgm.wav")
 var answer : array 1 .. 4 of int
 var guess : array 1 .. 4 of int
 var guessCount : int
+var chance : int := 10
 % Players
 var name : string
 var score : int := 0
@@ -21,7 +22,6 @@ var highPlayer : string := ""
 var btnGiveUp, btnMusic : int
 var btnRed, btnBlue, btnGreen, btnYellow, btnBlack, btnOrange, btnDone : int
 var btnContinue, btnExit, btnNewGame : int
-var btnChance : int
 % Mouse
 var x, y, b, bn, bud : int
 % Pictures
@@ -200,7 +200,6 @@ body procedure gameplayScreen
     drawline (0, 440, maxx, 440, darkgrey)
     GUI.Show (btnGiveUp)
     GUI.Show (btnMusic)
-    GUI.Show (btnChance)
     GUI.Disable (btnDone)
     for btn : btnRed .. btnDone
 	GUI.SetColor (btn, grey)
@@ -208,6 +207,7 @@ body procedure gameplayScreen
     end for
     Anim.Uncover (Anim.HORI_CENTRE, 5, 15)
     % Reset guess and correct counter
+    chance := 10
     guessCount := 0
     correct := 0
     % Set a random color for each dot
@@ -215,6 +215,9 @@ body procedure gameplayScreen
 	answer (i) := colors (Rand.Int (1, 6))
 	guess (i) := white
 	answer (i) := brightred     %% FOR TESTING
+    end for
+    for i : 1 .. chance
+	Font.Draw ("Guess#" + intstr (i), 500, i * 33 - 19, fontSans12, black)
     end for
     % Draw dots
     for decreasing i : 4 .. 1
@@ -270,11 +273,10 @@ end endingScreen
 % Show the result screen
 procedure resultScreen
     View.Set ("offscreenonly")
-    for btn : btnRed .. btnBlack
+    for btn : btnRed .. btnDone
 	GUI.Hide (btn)
     end for
     GUI.Hide (btnMusic)
-    GUI.Hide (btnChance)
     drawfillbox (0, 0, maxx, maxy, RGB.AddColor (0.95, 0.95, 0.95))
     % Show the correct pattern
     for i : 1 .. 4
@@ -285,7 +287,7 @@ procedure resultScreen
     GUI.Show (btnNewGame)
     GUI.Show (btnContinue)
     % Different display for win/lose
-    if correct not= 4 and guessCount < 10 then
+    if correct not= 4 and guessCount < chance then
 	score -= 100
 	fork playSoundEffect ("wrong.wav")
 	% Give up display
@@ -293,7 +295,7 @@ procedure resultScreen
 	score += 100
 	fork playSoundEffect ("correct.wav")
 	% Correct display
-    elsif guessCount >= 10 then
+    elsif guessCount >= chance then
 	score -= 100
 	fork playSoundEffect ("wrong.wav")
 	% Out of chance display
@@ -377,13 +379,41 @@ procedure checkAnswer
 	    drawfilloval (i * 20 + 600, guessCount * 33 - 14, 8, 8, guess (i))
 	    drawoval (i * 20 + 600, guessCount * 33 - 14, 8, 8, black)
 	end for
-	Font.Draw ("Guess#" + intstr (guessCount), 500, guessCount * 33 - 19, fontSans12, black)
 	G.TextRight (intstr (correct), 24, guessCount * 33 - 21, fontSans16, black)
 	Pic.Draw (picTick, 780, guessCount * 33 - 22, picCopy)
 	Anim.UncoverArea (480, (guessCount - 1) * 33, maxx, guessCount * 33, Anim.BOTTOM, 1, 10)
 	View.Set ("nooffscreenonly")
     end if
-    if correct = 4 or guessCount >= 10 then
+    if correct = 4 then
+	resultScreen
+	return
+    elsif guessCount = chance and chance < 13 and score >= 300 then
+	% Give player one more chance to guess
+	GUI.Disable (btnDone)
+	Font.Draw ("One more chance?", 500, guessCount * 33 + 14, fontSans12, black)
+	drawbox (660, guessCount * 33 + 10, 720, guessCount * 33 + 32, green)
+	drawbox (730, guessCount * 33 + 10, 790, guessCount * 33 + 32, red)
+	Font.Draw ("YES", 676, guessCount * 33 + 14, fontSans12, green)
+	Font.Draw ("NO", 749, guessCount * 33 + 14, fontSans12, red)
+	loop
+	    buttonwait ("down", x, y, bn, bud)
+	    if mouseIn (660, guessCount * 33 + 10, 720, guessCount * 33 + 32) then
+		chance += 1
+		score -= 300
+		topBar
+		View.Set ("offscreenonly")
+		drawfillbox (481, (chance - 1) * 33, maxx, chance * 33, white)
+		Font.Draw ("Guess#" + intstr (chance), 500, chance * 33 - 19, fontSans12, black)
+		Anim.UncoverArea (480, (chance - 1) * 33, maxx, chance * 33, Anim.BOTTOM, 1, 10)
+		View.Set ("nooffscreenonly")
+		GUI.Enable (btnDone)
+		return
+	    elsif mouseIn (730, guessCount * 33 + 10, 790, guessCount * 33 + 32) then
+		resultScreen
+		return
+	    end if
+	end loop
+    elsif guessCount = chance then
 	resultScreen
 	return
     end if
@@ -398,10 +428,6 @@ proc musicOnOff
 	Music.PlayFileStop
     end if
 end musicOnOff
-
-% Give player one more chance to guess
-proc moreChance
-end moreChance
 
 % Show player info at the top of the screen
 body proc topBar
@@ -431,8 +457,6 @@ body proc initBtn
     btnContinue := GUI.CreateButtonFull (350, 160, 100, "CONTINUE", gameplayScreen, 40, chr (0), false)
     btnExit := GUI.CreateButtonFull (550, 160, 100, "Exit", endingScreen, 40, chr (0), false)
     btnNewGame := GUI.CreateButtonFull (150, 160, 100, "NEW GAME", newGameScreen, 40, chr (0), false)
-    btnChance := GUI.CreateButtonFull (680, 440, 120, "More chances", moreChance, 40, chr (0), false)
-    GUI.SetColor (btnChance, cLightGreen)
     btnMusic := GUI.CreateButton (0, 0, 40, "Music ON/OFF", musicOnOff)
     GUI.SetColor (btnMusic, white)
     for btn : btnGiveUp .. btnMusic
@@ -450,13 +474,13 @@ body fcn mouseIn (x1, y1, x2, y2 : int) : boolean
 end mouseIn
 
 initBtn
-openingScreen
-instructionScreen
+% openingScreen
+% instructionScreen
 %% FOR TESTING
 % newGameScreen
-% name := "WWWWwwwwMMMMmmmm"
-% score := 0
-% gameplayScreen
+name := "WWWWwwwwMMMMmmmm"
+score := 100
+gameplayScreen
 
 % Wait for player to click buttons
 loop
