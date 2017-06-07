@@ -1,5 +1,5 @@
 /* Betty Zhang, Keisun Wu
- * June 6, 2017
+ * June 7, 2017
  * Mastermind Game
  */
 
@@ -13,6 +13,7 @@ var answer : array 1 .. 4 of int
 var guess : array 1 .. 4 of int
 var guessCount : int
 var chance : int := 10
+var mode : int := 6
 % Players
 var player : string
 var score : int := 0
@@ -21,7 +22,7 @@ var highPlayer : string := ""
 var top3Scores : array 1 .. 3 of int := init (minint, minint, minint)
 var top3Players : array 1 .. 3 of string := init ("", "", "")
 % Buttons
-var btnGiveUp, btnMusic : int
+var btnGiveUp, btnMusic, btnLevel : int
 var btnRed, btnBlue, btnGreen, btnYellow, btnBlack, btnOrange, btnDone : int
 var btnBrown, btnPurple, btnPink : int
 var btnContinue, btnExit, btnNewGame : int
@@ -45,7 +46,7 @@ colors (3) := brightgreen
 colors (4) := yellow
 colors (5) := RGB.AddColor (1, 0.6471, 0)
 colors (6) := black
-%% TODO: Change colors
+% Additional colors for the hard level
 colors (7) := RGB.AddColor (0.549, 0.2745, 0)
 colors (8) := purple
 colors (9) := RGB.AddColor (1, 0.451, 1)
@@ -64,6 +65,7 @@ var font5 : int := Font.New ("serif:20:italic")
 var music : int := 0
 var countPlayer : int := 0
 var correct : int := 0
+var level : int := 0
 
 process playSoundEffect (fileName : string)
     Music.PlayFile (fileName)
@@ -112,6 +114,8 @@ end instructionScreen
 body procedure newGameScreen
     var inputChar : char
     var onInstructionBtn : boolean := false
+    level := 0
+    mode := 6
     View.Set ("offscreenonly,nocursor")
     % Record highest score
     if score > highScore and countPlayer > 0 then
@@ -208,15 +212,18 @@ body procedure gameplayScreen
     drawline (0, 440, maxx, 440, darkgrey)
     GUI.Show (btnGiveUp)
     GUI.Show (btnMusic)
+    GUI.Show (btnLevel)
     GUI.Disable (btnDone)
+    GUI.Enable (btnLevel)
     for btn : btnRed .. btnDone
 	GUI.SetColor (btn, grey)
 	GUI.Show (btn)
     end for
-    for btn : btnBrown .. btnPink
-	GUI.SetColor (btn, grey)
-	GUI.Show (btn)
-    end for
+    if level mod 2 not= 0 then
+	for btn : btnBrown .. btnPink
+	    GUI.Show (btn)
+	end for 
+    end if
     Anim.Uncover (Anim.HORI_CENTRE, 5, 15)
     % Reset guess and correct counter
     chance := 10
@@ -224,7 +231,7 @@ body procedure gameplayScreen
     correct := 0
     % Set a random color for each dot
     for i : 1 .. 4
-	answer (i) := colors (Rand.Int (1, 9))
+	answer (i) := colors (Rand.Int (1, mode))
 	guess (i) := white
 	answer (i) := brightred      %% FOR TESTING
     end for
@@ -297,7 +304,11 @@ procedure resultScreen
     for btn : btnRed .. btnDone
 	GUI.Hide (btn)
     end for
+    for btn : btnBrown .. btnPink
+	GUI.Hide (btn)
+    end for
     GUI.Hide (btnMusic)
+    GUI.Hide (btnLevel)
     drawfillbox (0, 0, maxx, maxy, RGB.AddColor (0.95, 0.95, 0.95))
     % Show the correct pattern
     for i : 1 .. 4
@@ -308,16 +319,22 @@ procedure resultScreen
     GUI.Show (btnNewGame)
     GUI.Show (btnContinue)
     % Different display for win/lose
+    var scoreChange : int
+    if level mod 2 = 0 then
+	scoreChange := 100
+    else
+	scoreChange := 200
+    end if
     if correct not= 4 and guessCount < chance then
-	score -= 100
+	score -= scoreChange
 	fork playSoundEffect ("wrong.wav")
 	% Give up display
     elsif correct = 4 then
-	score += 100
+	score += scoreChange
 	fork playSoundEffect ("correct.wav")
 	% Correct display
     elsif guessCount >= chance then
-	score -= 100
+	score -= scoreChange
 	fork playSoundEffect ("wrong.wav")
 	% Out of chance display
     end if
@@ -399,6 +416,7 @@ procedure checkAnswer
 	    correct += 1
 	end if
     end for
+    GUI.Disable (btnLevel)
     % Show player's previous guesses
     if guessCount > 0 then
 	View.Set ("offscreenonly")
@@ -414,7 +432,7 @@ procedure checkAnswer
     if correct = 4 then
 	resultScreen
 	return
-    elsif guessCount = chance and chance < 13 and score >= 300 then
+    elsif guessCount = chance and chance < 13 and score >= 200 then
 	% Give player one more chance to guess
 	GUI.Disable (btnDone)
 	Font.Draw ("One more chance?", 500, guessCount * 33 + 14, fontSans12, black)
@@ -426,7 +444,7 @@ procedure checkAnswer
 	    buttonwait ("down", x, y, bn, bud)
 	    if mouseIn (660, guessCount * 33 + 10, 720, guessCount * 33 + 32) then
 		chance += 1
-		score -= 300
+		score -= 200
 		topBar
 		View.Set ("offscreenonly")
 		drawfillbox (481, (chance - 1) * 33, maxx, chance * 33, white)
@@ -451,16 +469,42 @@ proc musicOnOff
     music := music + 1
     if music mod 2 = 0 then
 	Music.PlayFileLoop ("bgm.wav")
+	GUI.SetLabel (btnMusic, "Music ON")
     else
 	Music.PlayFileStop
+	GUI.SetLabel (btnMusic, "Music OFF")
     end if
 end musicOnOff
+
+proc changeLevel
+    level := level + 1
+    if level mod 2 = 0 then
+	mode := 6
+	GUI.SetLabel (btnLevel, "Level: NORMAL")
+	for btn : btnBrown .. btnPink
+	    GUI.Hide (btn)
+	end for
+    else
+	mode := 9
+	GUI.SetLabel (btnLevel, "Level: HARD")
+	%% TODO: Animation
+	for btn : btnBrown .. btnPink
+	    GUI.Show (btn)
+	end for
+    end if
+    for i : 1 .. 4
+	answer (i) := colors (Rand.Int (1, mode))
+	guess (i) := white
+	dot (i, white)
+	answer (i) := colors (mode)     %% FOR TESTING (black or pink)
+    end for
+end changeLevel
 
 % Show player info at the top of the screen
 body proc topBar
     drawfillbox (0, 440, maxx, maxy, cLightGreen)
     Font.Draw (player, 10, 454, fontSans12, black)
-    G.TextCtr ("SCORE: " + intstr (score), 454, fontSans12, black)
+    G.TextRight ("SCORE: " + intstr (score), 10, 454, fontSans12, black)
 end topBar
 
 % Draw dot at a given position
@@ -488,6 +532,8 @@ end updateLeaderboard
 body proc initBtn
     btnGiveUp := GUI.CreateButton (400, 0, 80, "GIVE UP", resultScreen)
     GUI.SetColor (btnGiveUp, white)
+    btnLevel := GUI.CreateButton (180, 0, 120, "Level: NORMAL", changeLevel)
+    GUI.SetColor (btnLevel, white)
     btnRed := GUI.CreateButtonFull (100, 220, 80, "RED", fillDot, 40, chr (0), false)
     btnBlue := GUI.CreateButtonFull (200, 220, 80, "BLUE", fillDot, 40, chr (0), false)
     btnGreen := GUI.CreateButtonFull (300, 220, 80, "GREEN", fillDot, 40, chr (0), false)
@@ -501,7 +547,7 @@ body proc initBtn
     btnContinue := GUI.CreateButtonFull (350, 160, 100, "CONTINUE", gameplayScreen, 40, chr (0), false)
     btnExit := GUI.CreateButtonFull (550, 160, 100, "Exit", endingScreen, 40, chr (0), false)
     btnNewGame := GUI.CreateButtonFull (150, 160, 100, "NEW GAME", newGameScreen, 40, chr (0), false)
-    btnMusic := GUI.CreateButton (0, 0, 40, "Music ON/OFF", musicOnOff)
+    btnMusic := GUI.CreateButton (0, 0, 80, "Music ON", musicOnOff)
     GUI.SetColor (btnMusic, white)
     for btn : btnGiveUp .. btnMusic
 	GUI.Hide (btn)
