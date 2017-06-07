@@ -14,10 +14,12 @@ var guess : array 1 .. 4 of int
 var guessCount : int
 var chance : int := 10
 % Players
-var name : string
+var player : string
 var score : int := 0
 var highScore : int := minint
 var highPlayer : string := ""
+var top3Scores : array 1 .. 3 of int := init (minint, minint, minint)
+var top3Players : array 1 .. 3 of string := init ("", "", "")
 % Buttons
 var btnGiveUp, btnMusic : int
 var btnRed, btnBlue, btnGreen, btnYellow, btnBlack, btnOrange, btnDone : int
@@ -36,13 +38,12 @@ var picTick : int := Pic.FileNew ("tick.gif")
 var picLeaderBoard : int := Pic.FileNew ("leaderboard.gif")
 % Colors
 var cLightGreen : int := RGB.AddColor (0.8, 0.95, 0.75)
-var cOrange : int := RGB.AddColor (1, 0.6471, 0)
 var colors : array 1 .. 9 of int
 colors (1) := brightred
 colors (2) := brightblue
 colors (3) := brightgreen
 colors (4) := yellow
-colors (5) := cOrange
+colors (5) := RGB.AddColor (1, 0.6471, 0)
 colors (6) := black
 %% TODO: Change colors
 colors (7) := RGB.AddColor (0.549, 0.2745, 0)
@@ -52,9 +53,11 @@ colors (9) := RGB.AddColor (1, 0.451, 1)
 var fontSans40 : int := Font.New ("sans serif:40")
 var fontSans36 : int := Font.New ("sans serif:36")
 var fontSans24 : int := Font.New ("sans serif:24")
+var fontSans20 : int := Font.New ("sans serif:20")
 var fontSans16 : int := Font.New ("sans serif:16")
 var fontSans12 : int := Font.New ("sans serif:12")
 var fontMono28 : int := Font.New ("mono:28")
+var fontMono20 : int := Font.New ("mono:20")
 var font4 : int := Font.New ("serif:30:italic")
 var font5 : int := Font.New ("serif:20:italic")
 % Counts
@@ -73,6 +76,7 @@ forward procedure gameplayScreen
 % Helper procedures
 forward proc topBar
 forward proc dot (pos : int, c : int)
+forward proc updateLeaderboard
 forward proc initBtn
 forward fcn mouseIn (x1, y1, x2, y2 : int) : boolean
 
@@ -112,7 +116,10 @@ body procedure newGameScreen
     % Record highest score
     if score > highScore and countPlayer > 0 then
 	highScore := score
-	highPlayer := name
+	highPlayer := player
+    end if
+    if countPlayer > 0 then
+	updateLeaderboard
     end if
     % Get player name
     Anim.Cover (cLightGreen, Anim.LEFT + Anim.RIGHT, 5, 15)
@@ -122,20 +129,20 @@ body procedure newGameScreen
     Font.Draw ("Read Instruction", 16, 16, fontSans12, black)
     Anim.UncoverArea (220, 210, 580, 330, Anim.TOP, 3, 15)
     Anim.UncoverArea (12, 12, 130, 32, Anim.BOTTOM, 2, 15)
-    name := ""
+    player := ""
     Input.Flush
     loop
 	if Input.hasch then
 	    % Simulate a "get", with input always at the vertical centre
 	    inputChar := getchar
 	    Input.Flush
-	    if inputChar = KEY_BACKSPACE and length (name) > 0 then
-		name := name (1 .. * -1)
+	    if inputChar = KEY_BACKSPACE and length (player) > 0 then
+		player := player (1 .. * -1)
 		drawfillbox (200, 0, 600, 209, cLightGreen)
-	    elsif inputChar not= KEY_BACKSPACE and inputChar not= KEY_ENTER and length (name) < 16 then
-		name += inputChar
+	    elsif inputChar not= KEY_BACKSPACE and inputChar not= KEY_ENTER and length (player) < 16 then
+		player += inputChar
 		drawfillbox (200, 0, 600, 209, cLightGreen)
-	    elsif inputChar = KEY_ENTER and length (name) > 0 and name (1) not= " " and name (*) not= " " then
+	    elsif inputChar = KEY_ENTER and length (player) > 0 and player (1) not= " " and player (*) not= " " then
 		exit
 	    else
 		drawfillbox (220, 210, 580, 212, brightred)
@@ -179,7 +186,7 @@ body procedure newGameScreen
 	    end if
 	end if
 	drawfillbox (0, 213, maxx, 260, cLightGreen)
-	G.TextCtr (name, 220, fontMono28, black)
+	G.TextCtr (player, 220, fontMono28, black)
 	View.Update
     end loop
     score := 0
@@ -252,19 +259,28 @@ proc endingScreen
     cls
     if score > highScore then
 	highScore := score
-	highPlayer := name
+	highPlayer := player
     end if
+    updateLeaderboard
     Pic.Draw (picEnding, 0, 0, picCopy)
-    if countPlayer = 1 then
+    if countPlayer <= 1 then
 	G.TextCtr ("Congratulation!", 350, fontSans40, black)
-	G.TextCtr ("Player name: " + name, 160, fontMono28, black)
+	G.TextCtr ("Player name: " + player, 160, fontMono28, black)
 	G.TextCtr ("Final score: " + intstr (score), 100, fontMono28, black)
-    else
+    elsif countPlayer <= 3 then
 	Pic.Draw (picLeaderBoard, 300, 250, picMerge)
 	G.TextCtr ("Highest score: " + intstr (highScore), 160, fontMono28, black)
 	G.TextCtr ("Player name: " + highPlayer, 100, fontMono28, black)
+    else
+	Pic.Draw (picLeaderBoard, 300, 250, picMerge)
+	Font.Draw ("Player name", 150, 192, fontSans20, black)
+	G.TextRight ("Score", 150, 192, fontSans20, black)
+	for i : 1 .. 3
+	    Font.Draw (top3Players (i), 150, 180 - 40 * i, fontSans16, black)
+	    G.TextRight (intstr (top3Scores (i)), 150, 180 - 40 * i, fontMono20, black)
+	end for
     end if
-    delay (5000)
+    delay (10000)
     cls
     %% TODO: Add animation
     Pic.Draw (picThank, 0, 0, picCopy)
@@ -306,7 +322,7 @@ procedure resultScreen
 	% Out of chance display
     end if
     % Show player info
-    G.TextCtr ("Name: " + name + "       " + "Score: " + intstr (score), 400, fontSans16, black)
+    G.TextCtr ("Name: " + player + "       " + "Score: " + intstr (score), 400, fontSans16, black)
     Anim.Uncover (Anim.TOP, 2, 5)
     View.Set ("nooffscreenonly")
 end resultScreen
@@ -443,7 +459,7 @@ end musicOnOff
 % Show player info at the top of the screen
 body proc topBar
     drawfillbox (0, 440, maxx, maxy, cLightGreen)
-    Font.Draw (name, 10, 454, fontSans12, black)
+    Font.Draw (player, 10, 454, fontSans12, black)
     G.TextCtr ("SCORE: " + intstr (score), 454, fontSans12, black)
 end topBar
 
@@ -452,6 +468,20 @@ body proc dot (pos : int, c : int)
     drawfilloval (pos * 92 + 10, 328, 32, 32, c)
     drawoval (pos * 92 + 10, 328, 32, 32, black)
 end dot
+
+body proc updateLeaderboard
+    for i : 1 .. 3
+	if score > top3Scores (i) then
+	    for decreasing j : 3 .. i + 1
+		top3Scores (j) := top3Scores (j - 1)
+		top3Players (j) := top3Players (j - 1)
+	    end for
+	    top3Scores (i) := score
+	    top3Players (i) := player
+	    exit
+	end if
+    end for
+end updateLeaderboard
 
 % Initialize all buttons
 % In order to avoid "Cannot find button"
@@ -492,9 +522,20 @@ initBtn
 % instructionScreen
 %% FOR TESTING
 % newGameScreen
-name := "WWWWwwwwMMMMmmmm"
+player := "WWWWwwwwMMMMmmmm"
 score := 100
+countPlayer += 1
 gameplayScreen
+% top3Scores (1) := 1000
+% top3Scores (2) := 300
+% top3Scores (3) := -1000
+% top3Players (1) := "WWWWmmmm"
+% top3Players (2) := "erverv swwdff"
+% top3Players (3) := "oaudufh asu"
+% player := "WWWWWWWWWWWWWWWW"
+% score := 600
+% countPlayer := 4
+% endingScreen
 
 % Wait for player to click buttons
 loop
