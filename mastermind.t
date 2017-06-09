@@ -95,12 +95,16 @@ end openingScreen
 body procedure instructionScreen
     View.Set ("offscreenonly")
     Pic.Draw (picInstruction, 0, 0, picCopy)
-    G.TextCtr ("Instruction", 400, fontSans36, black)
-    G.TextCtr ("The computer will randomly choose 4 colours from green, red, blue, yellow, orange and black.", 330, fontSans12, black)
+    G.TextCtr ("Instruction", 420, fontSans36, black)
+    G.TextCtr ("The computer will randomly choose 4 colours from six or nine colours based on the level you choose", 360, fontSans12, black)
+    G.TextCtr ("Click the button of colour, and then click on the dot to fill the colour in", 330, fontSans12, black)
     G.TextCtr ("You guess 4 colours at each turn, the computer then tells you how many you guessed correctly", 300, fontSans12, black)
-    G.TextCtr ("The colour and the position must be correct, but it doesn't tell you which one is correct.", 270, fontSans12, black)
+    G.TextCtr ("The colour and the position must be correct, but it doesn't tell you which one is correct", 270, fontSans12, black)
     G.TextCtr ("You have 10 chances total to get the correct pattern.", 240, fontSans12, black)
-    G.TextCtr ("Hope you enjoy!", 180, fontSans24, black)
+    G.TextCtr ("You can get only three more chances if you would like to use 200 scores for each additional chance", 210, fontSans12, black)
+    G.TextCtr ("You will get corresponding scores if you get the correct the pattern", 180, fontSans12, black)
+    G.TextCtr ("You will lose corresponding scores if you run out of chances or you give up", 150, fontSans12, black)
+    G.TextCtr ("Hope you enjoy!", 100, fontSans24, black)
     Pic.Draw (picContinue, 600, 30, picMerge)
     Anim.Uncover (Anim.TOP, 5, 15)
     loop
@@ -116,6 +120,7 @@ body procedure newGameScreen
     var onInstructionBtn : boolean := false
     level := 0
     mode := 6
+    GUI.SetLabel (btnLevel, "Level: NORMAL")
     View.Set ("offscreenonly,nocursor")
     % Record highest score
     if score > highScore and countPlayer > 0 then
@@ -222,7 +227,7 @@ body procedure gameplayScreen
     if level mod 2 not= 0 then
 	for btn : btnBrown .. btnPink
 	    GUI.Show (btn)
-	end for 
+	end for
     end if
     Anim.Uncover (Anim.HORI_CENTRE, 5, 15)
     % Reset guess and correct counter
@@ -567,7 +572,7 @@ initBtn
 % openingScreen
 % instructionScreen
 %% FOR TESTING
-% newGameScreen
+%newGameScreen
 player := "WWWWwwwwMMMMmmmm"
 score := 100
 countPlayer += 1
