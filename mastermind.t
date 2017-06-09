@@ -222,7 +222,7 @@ body procedure gameplayScreen
     if level mod 2 not= 0 then
 	for btn : btnBrown .. btnPink
 	    GUI.Show (btn)
-	end for 
+	end for
     end if
     Anim.Uncover (Anim.HORI_CENTRE, 5, 15)
     % Reset guess and correct counter
@@ -263,6 +263,7 @@ end gameplayScreen
 
 % Show the ending screen
 proc endingScreen
+    View.Set ("offscreenonly")
     cls
     if score > highScore then
 	highScore := score
@@ -274,10 +275,12 @@ proc endingScreen
 	G.TextCtr ("Congratulation!", 350, fontSans40, black)
 	G.TextCtr ("Player name: " + player, 160, fontMono28, black)
 	G.TextCtr ("Final score: " + intstr (score), 100, fontMono28, black)
+	Anim.Uncover (Anim.TOP, 2, 5)
     elsif countPlayer <= 3 then
 	Pic.Draw (picLeaderBoard, 300, 250, picMerge)
 	G.TextCtr ("Highest score: " + intstr (highScore), 160, fontMono28, black)
 	G.TextCtr ("Player name: " + highPlayer, 100, fontMono28, black)
+	Anim.Uncover (Anim.TOP, 2, 5)
     else
 	Pic.Draw (picLeaderBoard, 300, 250, picMerge)
 	Font.Draw ("Player name", 150, 192, fontSans20, black)
@@ -286,16 +289,19 @@ proc endingScreen
 	    Font.Draw (top3Players (i), 150, 180 - 40 * i, fontSans16, black)
 	    G.TextRight (intstr (top3Scores (i)), 150, 180 - 40 * i, fontMono20, black)
 	end for
+	Anim.Uncover (Anim.TOP, 2, 5)
+	delay (5000)
     end if
-    delay (10000)
+    delay (5000)
     cls
-    %% TODO: Add animation
     Pic.Draw (picThank, 0, 0, picCopy)
     Pic.Draw (picLogo, 150, 300, picCopy)
     G.TextCtr ("Thank you for playing", 230, font4, black)
     G.TextCtr ("By Keisun & Betty", 165, font5, black)
+    Anim.Uncover (Anim.TOP, 2, 5)
     Music.PlayFileStop
     GUI.Quit
+    View.Set ("nooffscreenonly")
 end endingScreen
 
 % Show the result screen
@@ -392,6 +398,11 @@ procedure fillDot
     GUI.Enable (btnDone)
     for i : 1 .. 4
 	if mouseIn (i * 92 + 10 - 32, 328 - 32, i * 92 + 10 + 32, 328 + 32) then
+	    for j : 0 .. 32
+		drawfilloval (i * 92 + 10, 328, j, j, dotColor)
+		View.Update
+		delay (10)
+	    end for
 	    dot (i, dotColor)
 	    guess (i) := dotColor
 	end if
@@ -478,20 +489,25 @@ end musicOnOff
 
 proc changeLevel
     level := level + 1
+    View.Set ("offscreenonly")
     if level mod 2 = 0 then
 	mode := 6
 	GUI.SetLabel (btnLevel, "Level: NORMAL")
+	View.Update
 	for btn : btnBrown .. btnPink
 	    GUI.Hide (btn)
 	end for
+	Anim.UncoverArea (100, 100, 380, 140, Anim.BOTTOM, 1, 5)
     else
 	mode := 9
 	GUI.SetLabel (btnLevel, "Level: HARD")
-	%% TODO: Animation
+	View.Update
 	for btn : btnBrown .. btnPink
 	    GUI.Show (btn)
 	end for
+	Anim.UncoverArea (100, 100, 380, 140, Anim.TOP, 1, 5)
     end if
+    View.Set ("nooffscreenonly")
     for i : 1 .. 4
 	answer (i) := colors (Rand.Int (1, mode))
 	guess (i) := white
