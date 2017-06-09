@@ -238,7 +238,7 @@ body procedure gameplayScreen
     for i : 1 .. 4
 	answer (i) := colors (Rand.Int (1, mode))
 	guess (i) := white
-	answer (i) := brightred      %% FOR TESTING
+	% answer (i) := brightred      %% FOR TESTING
     end for
     for i : 1 .. chance
 	Font.Draw ("Guess#" + intstr (i), 500, i * 33 - 19, fontSans12, black)
@@ -398,9 +398,7 @@ procedure fillDot
 	View.Update
     end loop
     buttonwait ("down", x, y, bn, bud)
-    % Fill the color in and
-    % Check if all the dots are filled
-    GUI.Enable (btnDone)
+    % Fill the color in
     for i : 1 .. 4
 	if mouseIn (i * 92 + 10 - 32, 328 - 32, i * 92 + 10 + 32, 328 + 32) then
 	    for j : 0 .. 32
@@ -411,6 +409,10 @@ procedure fillDot
 	    dot (i, dotColor)
 	    guess (i) := dotColor
 	end if
+    end for
+    % Check if all the dots are filled
+    GUI.Enable (btnDone)
+    for i : 1 .. 4
 	if guess (i) = white then
 	    GUI.Disable (btnDone)
 	end if
@@ -517,7 +519,7 @@ proc changeLevel
 	answer (i) := colors (Rand.Int (1, mode))
 	guess (i) := white
 	dot (i, white)
-	answer (i) := colors (mode)     %% FOR TESTING (black or pink)
+	% answer (i) := colors (mode)     %% FOR TESTING (black or pink)
     end for
 end changeLevel
 
@@ -566,7 +568,7 @@ body proc initBtn
     btnPurple := GUI.CreateButtonFull (200, 100, 80, "PURPLE", fillDot, 40, chr (0), false)
     btnPink := GUI.CreateButtonFull (300, 100, 80, "PINK", fillDot, 40, chr (0), false)
     btnContinue := GUI.CreateButtonFull (350, 160, 100, "CONTINUE", gameplayScreen, 40, chr (0), false)
-    btnExit := GUI.CreateButtonFull (550, 160, 100, "Exit", endingScreen, 40, chr (0), false)
+    btnExit := GUI.CreateButtonFull (550, 160, 100, "EXIT", endingScreen, 40, chr (0), false)
     btnNewGame := GUI.CreateButtonFull (150, 160, 100, "NEW GAME", newGameScreen, 40, chr (0), false)
     btnMusic := GUI.CreateButton (0, 0, 80, "Music ON", musicOnOff)
     GUI.SetColor (btnMusic, white)
@@ -585,14 +587,14 @@ body fcn mouseIn (x1, y1, x2, y2 : int) : boolean
 end mouseIn
 
 initBtn
-% openingScreen
-% instructionScreen
+openingScreen
+instructionScreen
 %% FOR TESTING
 %newGameScreen
-player := "WWWWwwwwMMMMmmmm"
-score := 100
-countPlayer += 1
-gameplayScreen
+% player := "WWWWwwwwMMMMmmmm"
+% score := 100
+% countPlayer += 1
+% gameplayScreen
 % top3Scores (1) := 1000
 % top3Scores (2) := 300
 % top3Scores (3) := -1000
