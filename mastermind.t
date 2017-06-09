@@ -233,6 +233,10 @@ body procedure gameplayScreen
 	    GUI.Show (btn)
 	end for
     end if
+    % Indicate player's number of chances
+    for i : 1 .. chance
+	Font.Draw ("Guess#" + intstr (i), 500, i * 33 - 19, fontSans12, black)
+    end for
     Anim.Uncover (Anim.HORI_CENTRE, 5, 15)
     % Reset guess and correct counter
     chance := 10
@@ -247,9 +251,6 @@ body procedure gameplayScreen
 	% answer (2) := brightred
 	% answer (3) := colors (1)
 	% answer (4) := colors (2)
-    end for
-    for i : 1 .. chance
-	Font.Draw ("Guess#" + intstr (i), 500, i * 33 - 19, fontSans12, black)
     end for
     % Draw dots
     for decreasing i : 4 .. 1
@@ -406,9 +407,7 @@ procedure fillDot
 	View.Update
     end loop
     buttonwait ("down", x, y, bn, bud)
-    % Fill the color in and
-    % Check if all the dots are filled
-    GUI.Enable (btnDone)
+    % Fill the color in
     for i : 1 .. 4
 	if mouseIn (i * 92 + 10 - 32, 328 - 32, i * 92 + 10 + 32, 328 + 32) then
 	    for j : 0 .. 32
@@ -419,6 +418,10 @@ procedure fillDot
 	    dot (i, dotColor)
 	    guess (i) := dotColor
 	end if
+    end for
+    % Check if all the dots are filled
+    GUI.Enable (btnDone)
+    for i : 1 .. 4
 	if guess (i) = white then
 	    GUI.Disable (btnDone)
 	end if
@@ -443,7 +446,7 @@ procedure checkAnswer
 	    blackKeyPeg += 1
 	else
 	    % When the position is not correct,
-	    % Check if the color exists in the pattern
+	    % Check if the answer is guessed but at a wrong position
 	    % AKA: Count for the white key pegs
 	    for j : 1 .. 4
 		if answer (i) = guess (j) then
@@ -595,7 +598,7 @@ body proc initBtn
     btnPurple := GUI.CreateButtonFull (200, 100, 80, "PURPLE", fillDot, 40, chr (0), false)
     btnPink := GUI.CreateButtonFull (300, 100, 80, "PINK", fillDot, 40, chr (0), false)
     btnContinue := GUI.CreateButtonFull (350, 160, 100, "CONTINUE", gameplayScreen, 40, chr (0), false)
-    btnExit := GUI.CreateButtonFull (550, 160, 100, "Exit", endingScreen, 40, chr (0), false)
+    btnExit := GUI.CreateButtonFull (550, 160, 100, "EXIT", endingScreen, 40, chr (0), false)
     btnNewGame := GUI.CreateButtonFull (150, 160, 100, "NEW GAME", newGameScreen, 40, chr (0), false)
     btnMusic := GUI.CreateButton (0, 0, 80, "Music ON", musicOnOff)
     GUI.SetColor (btnMusic, white)
