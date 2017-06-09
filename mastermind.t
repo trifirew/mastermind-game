@@ -1,5 +1,5 @@
 /* Betty Zhang, Keisun Wu
- * June 7, 2017
+ * June 9, 2017
  * Mastermind Game
  */
 
@@ -39,6 +39,7 @@ var picTick : int := Pic.FileNew ("tick.gif")
 var picLeaderBoard : int := Pic.FileNew ("leaderboard.gif")
 % Colors
 var cLightGreen : int := RGB.AddColor (0.8, 0.95, 0.75)
+var cLightGrey : int := RGB.AddColor (0.9, 0.9, 0.9)
 var colors : array 1 .. 9 of int
 colors (1) := brightred
 colors (2) := brightblue
@@ -64,9 +65,12 @@ var font5 : int := Font.New ("serif:20:italic")
 % Counts
 var music : int := 0
 var countPlayer : int := 0
-var correct : int := 0
+var blackKeyPeg : int := 0
+var whiteKeyPeg : int := 0
 var level : int := 0
 
+% Play sound effect
+% Prevent sound effect from blocking other game procedure
 process playSoundEffect (fileName : string)
     Music.PlayFile (fileName)
 end playSoundEffect
@@ -96,6 +100,7 @@ body procedure instructionScreen
     View.Set ("offscreenonly")
     Pic.Draw (picInstruction, 0, 0, picCopy)
     G.TextCtr ("Instruction", 420, fontSans36, black)
+    %% TODO: Update instruction
     G.TextCtr ("The computer will randomly choose 4 colours from six or nine colours based on the level you choose", 360, fontSans12, black)
     G.TextCtr ("Click the button of colour, and then click on the dot to fill the colour in", 330, fontSans12, black)
     G.TextCtr ("You guess 4 colours at each turn, the computer then tells you how many you guessed correctly", 300, fontSans12, black)
@@ -186,7 +191,6 @@ body procedure newGameScreen
 	    end if
 	end if
 	if Mouse.ButtonMoved ("down") then
-	    % Dump this click
 	    Mouse.ButtonWait ("down", x, y, bn, bud)
 	    if mouseIn (12, 12, 130, 32) then
 		View.Set ("nooffscreenonly")
@@ -214,7 +218,7 @@ body procedure gameplayScreen
     % Show player info
     topBar
     drawline (480, 0, 480, 440, darkgrey)
-    drawline (0, 440, maxx, 440, darkgrey)
+    drawfillbox (480, 0, maxx, 440, cLightGrey)
     GUI.Show (btnGiveUp)
     GUI.Show (btnMusic)
     GUI.Show (btnLevel)
@@ -233,12 +237,16 @@ body procedure gameplayScreen
     % Reset guess and correct counter
     chance := 10
     guessCount := 0
-    correct := 0
+    blackKeyPeg := 0
     % Set a random color for each dot
     for i : 1 .. 4
 	answer (i) := colors (Rand.Int (1, mode))
 	guess (i) := white
-	answer (i) := brightred      %% FOR TESTING
+	%% FOR TESTING
+	% answer (1) := brightred
+	% answer (2) := brightred
+	% answer (3) := colors (1)
+	% answer (4) := colors (2)
     end for
     for i : 1 .. chance
 	Font.Draw ("Guess#" + intstr (i), 500, i * 33 - 19, fontSans12, black)
@@ -336,11 +344,11 @@ procedure resultScreen
     else
 	scoreChange := 200
     end if
-    if correct not= 4 and guessCount < chance then
+    if blackKeyPeg not= 4 and guessCount < chance then
 	score -= scoreChange
 	fork playSoundEffect ("wrong.wav")
 	% Give up display
-    elsif correct = 4 then
+    elsif blackKeyPeg = 4 then
 	score += scoreChange
 	fork playSoundEffect ("correct.wav")
 	% Correct display
@@ -425,11 +433,24 @@ end fillDot
 
 % Check if player guess correctly
 procedure checkAnswer
-    correct := 0
+    blackKeyPeg := 0
+    whiteKeyPeg := 0
     guessCount += 1
     for i : 1 .. 4
-	if guess (i) = answer (i) then
-	    correct += 1
+	if answer (i) = guess (i) then
+	    % When the position is correct
+	    % AKA: Count for the black key pegs
+	    blackKeyPeg += 1
+	else
+	    % When the position is not correct,
+	    % Check if the color exists in the pattern
+	    % AKA: Count for the white key pegs
+	    for j : 1 .. 4
+		if answer (i) = guess (j) then
+		    whiteKeyPeg += 1
+		    exit
+		end if
+	    end for
 	end if
     end for
     GUI.Disable (btnLevel)
@@ -437,15 +458,23 @@ procedure checkAnswer
     if guessCount > 0 then
 	View.Set ("offscreenonly")
 	for i : 1 .. 4
-	    drawfilloval (i * 20 + 600, guessCount * 33 - 14, 8, 8, guess (i))
-	    drawoval (i * 20 + 600, guessCount * 33 - 14, 8, 8, black)
+	    drawfilloval (i * 20 + 612, guessCount * 33 - 14, 8, 8, guess (i))
+	    drawoval (i * 20 + 612, guessCount * 33 - 14, 8, 8, black)
 	end for
-	G.TextRight (intstr (correct), 24, guessCount * 33 - 21, fontSans16, black)
-	Pic.Draw (picTick, 780, guessCount * 33 - 22, picCopy)
+	% Show the white key pegs
+	for i : 0 .. whiteKeyPeg - 1
+	    drawfilloval (764 + (i mod 2) * 10, guessCount * 33 + (i div 2) * 10 - 20, 4, 4, white)
+	    drawoval (764 + (i mod 2) * 10, guessCount * 33 + (i div 2) * 10 - 20, 4, 4, black)
+	end for
+	% Show the black key pegs
+	for i : whiteKeyPeg .. whiteKeyPeg + blackKeyPeg - 1
+	    drawfilloval (764 + (i mod 2) * 10, guessCount * 33 + (i div 2) * 10 - 20, 4, 4, black)
+	    drawoval (764 + (i mod 2) * 10, guessCount * 33 + (i div 2) * 10 - 20, 4, 4, black)
+	end for
 	Anim.UncoverArea (480, (guessCount - 1) * 33, maxx, guessCount * 33, Anim.BOTTOM, 1, 10)
 	View.Set ("nooffscreenonly")
     end if
-    if correct = 4 then
+    if blackKeyPeg = 4 then
 	resultScreen
 	return
     elsif guessCount = chance and chance < 13 and score >= 200 then
@@ -463,7 +492,7 @@ procedure checkAnswer
 		score -= 200
 		topBar
 		View.Set ("offscreenonly")
-		drawfillbox (481, (chance - 1) * 33, maxx, chance * 33, white)
+		drawfillbox (481, (chance - 1) * 33, maxx, chance * 33, cLightGrey)
 		Font.Draw ("Guess#" + intstr (chance), 500, chance * 33 - 19, fontSans12, black)
 		Anim.UncoverArea (480, (chance - 1) * 33, maxx, chance * 33, Anim.BOTTOM, 1, 10)
 		View.Set ("nooffscreenonly")
@@ -517,7 +546,7 @@ proc changeLevel
 	answer (i) := colors (Rand.Int (1, mode))
 	guess (i) := white
 	dot (i, white)
-	answer (i) := colors (mode)     %% FOR TESTING (black or pink)
+	% answer (i) := colors (mode)     %% FOR TESTING (black or pink)
     end for
 end changeLevel
 
@@ -585,24 +614,14 @@ body fcn mouseIn (x1, y1, x2, y2 : int) : boolean
 end mouseIn
 
 initBtn
-% openingScreen
-% instructionScreen
+openingScreen
+instructionScreen
 %% FOR TESTING
-%newGameScreen
-player := "WWWWwwwwMMMMmmmm"
-score := 100
-countPlayer += 1
-gameplayScreen
-% top3Scores (1) := 1000
-% top3Scores (2) := 300
-% top3Scores (3) := -1000
-% top3Players (1) := "WWWWmmmm"
-% top3Players (2) := "erverv swwdff"
-% top3Players (3) := "oaudufh asu"
-% player := "WWWWWWWWWWWWWWWW"
-% score := 600
-% countPlayer := 4
-% endingScreen
+% newGameScreen
+% player := "WWWWwwwwMMMMmmmm"
+% score := 100
+% countPlayer += 1
+% gameplayScreen
 
 % Wait for player to click buttons
 loop
