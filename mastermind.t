@@ -247,10 +247,10 @@ body procedure gameplayScreen
 	answer (i) := colors (Rand.Int (1, mode))
 	guess (i) := white
 	%% FOR TESTING
-	% answer (1) := brightred
-	% answer (2) := brightred
-	% answer (3) := colors (1)
-	% answer (4) := colors (2)
+	answer (1) := colors (1)
+	answer (2) := colors (2)
+	answer (3) := colors (3)
+	answer (4) := colors (4)
     end for
     % Draw dots
     for decreasing i : 4 .. 1
@@ -436,6 +436,7 @@ end fillDot
 
 % Check if player guess correctly
 procedure checkAnswer
+    var countedAsExist : array 1 .. 4 of boolean := init (false, false, false, false)
     blackKeyPeg := 0
     whiteKeyPeg := 0
     guessCount += 1
@@ -444,13 +445,15 @@ procedure checkAnswer
 	    % When the position is correct
 	    % AKA: Count for the black key pegs
 	    blackKeyPeg += 1
+	    countedAsExist (i) := true
 	else
 	    % When the position is not correct,
 	    % Check if the answer is guessed but at a wrong position
 	    % AKA: Count for the white key pegs
 	    for j : 1 .. 4
-		if answer (i) = guess (j) then
+		if answer (i) = guess (j) and answer (j) not= guess (j) and not countedAsExist (j) then
 		    whiteKeyPeg += 1
+		    countedAsExist (j) := true
 		    exit
 		end if
 	    end for
