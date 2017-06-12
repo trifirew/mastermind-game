@@ -1,5 +1,5 @@
 /* Betty Zhang, Keisun Wu
- * June 9, 2017
+ * June 12, 2017
  * Mastermind Game
  */
 
@@ -247,10 +247,10 @@ body procedure gameplayScreen
 	answer (i) := colors (Rand.Int (1, mode))
 	guess (i) := white
 	%% FOR TESTING
-	answer (1) := colors (1)
-	answer (2) := colors (2)
-	answer (3) := colors (3)
-	answer (4) := colors (4)
+	% answer (1) := colors (1)
+	% answer (2) := colors (2)
+	% answer (3) := colors (3)
+	% answer (4) := colors (4)
     end for
     % Draw dots
     for decreasing i : 4 .. 1
@@ -329,6 +329,7 @@ procedure resultScreen
     end for
     GUI.Hide (btnMusic)
     GUI.Hide (btnLevel)
+    GUI.Hide (btnGiveUp)
     drawfillbox (0, 0, maxx, maxy, RGB.AddColor (0.95, 0.95, 0.95))
     % Show the correct pattern
     for i : 1 .. 4
