@@ -1,5 +1,5 @@
 /* Betty Zhang, Keisun Wu
- * June 12, 2017
+ * June 13, 2017
  * Mastermind Game
  */
 
@@ -71,6 +71,7 @@ var level : int := 0
 
 % Play sound effect
 % Prevent sound effect from blocking other game procedure
+% Keisun
 process playSoundEffect (fileName : string)
     Music.PlayFile (fileName)
 end playSoundEffect
@@ -87,6 +88,7 @@ forward proc initBtn
 forward fcn mouseIn (x1, y1, x2, y2 : int) : boolean
 
 % Show the opening screen
+% Betty
 procedure openingScreen
     Pic.Draw (picLogo, 150, 330, picCopy)
     Pic.Draw (picBoard, 250, 80, picCopy)
@@ -96,16 +98,16 @@ procedure openingScreen
 end openingScreen
 
 % Show the instruction screen
+% Betty
 body procedure instructionScreen
     View.Set ("offscreenonly")
     Pic.Draw (picInstruction, 0, 0, picCopy)
     G.TextCtr ("Instruction", 420, fontSans36, black)
-    %% TODO: Update instruction
     G.TextCtr ("The computer will randomly choose 4 colours from six or nine colours based on the level you choose", 360, fontSans12, black)
-    G.TextCtr ("Click the button of colour, and then click on the dot to fill the colour in", 330, fontSans12, black)
-    G.TextCtr ("You guess 4 colours at each turn, the computer then tells you how many you guessed correctly", 300, fontSans12, black)
-    G.TextCtr ("The colour and the position must be correct, but it doesn't tell you which one is correct", 270, fontSans12, black)
-    G.TextCtr ("You have 10 chances total to get the correct pattern.", 240, fontSans12, black)
+    G.TextCtr ("You guess 4 colours at each turn, you have 10 chances in total to get the correct pattern", 330, fontSans12, black)
+    G.TextCtr ("Click the button of colour, and then click on the dot to fill the colour in", 300, fontSans12, black)
+    G.TextCtr ("A black key peg indicates a colour is at a correct position", 270, fontSans12, black)
+    G.TextCtr ("A white key peg indicates a colour exists but at a wrong position", 240, fontSans12, black)
     G.TextCtr ("You can get only three more chances if you would like to use 200 scores for each additional chance", 210, fontSans12, black)
     G.TextCtr ("You will get corresponding scores if you get the correct the pattern", 180, fontSans12, black)
     G.TextCtr ("You will lose corresponding scores if you run out of chances or you give up", 150, fontSans12, black)
@@ -120,6 +122,7 @@ body procedure instructionScreen
 end instructionScreen
 
 % Start a new game, let the player enter their name
+% Keisun
 body procedure newGameScreen
     var inputChar : char
     var onInstructionBtn : boolean := false
@@ -209,6 +212,7 @@ body procedure newGameScreen
 end newGameScreen
 
 % Show the gameplay(main) screen
+% Keisun, Betty
 body procedure gameplayScreen
     View.Set ("offscreenonly")
     cls
@@ -276,6 +280,7 @@ body procedure gameplayScreen
 end gameplayScreen
 
 % Show the ending screen
+% Betty
 proc endingScreen
     View.Set ("offscreenonly")
     cls
@@ -319,6 +324,7 @@ proc endingScreen
 end endingScreen
 
 % Show the result screen
+% Betty, Keisun
 procedure resultScreen
     View.Set ("offscreenonly")
     for btn : btnRed .. btnDone
@@ -367,6 +373,7 @@ end resultScreen
 
 % Called when color button is clicked
 % Let player to fill a dot with selected color
+% Keisun
 procedure fillDot
     var dotColor : int
     if GUI.GetEventWidgetID = btnRed then
@@ -436,6 +443,7 @@ procedure fillDot
 end fillDot
 
 % Check if player guess correctly
+% Keisun
 procedure checkAnswer
     var countedAsExist : array 1 .. 4 of boolean := init (false, false, false, false)
     blackKeyPeg := 0
@@ -517,6 +525,7 @@ procedure checkAnswer
 end checkAnswer
 
 % Turn on/off the background music
+% Betty
 proc musicOnOff
     music := music + 1
     if music mod 2 = 0 then
@@ -528,6 +537,8 @@ proc musicOnOff
     end if
 end musicOnOff
 
+% Change level between normal/hard
+% Betty
 proc changeLevel
     level := level + 1
     View.Set ("offscreenonly")
@@ -558,6 +569,7 @@ proc changeLevel
 end changeLevel
 
 % Show player info at the top of the screen
+% Keisun
 body proc topBar
     drawfillbox (0, 440, maxx, maxy, cLightGreen)
     Font.Draw (player, 10, 454, fontSans12, black)
@@ -565,11 +577,14 @@ body proc topBar
 end topBar
 
 % Draw dot at a given position
+% Keisun
 body proc dot (pos : int, c : int)
     drawfilloval (pos * 92 + 10, 328, 32, 32, c)
     drawoval (pos * 92 + 10, 328, 32, 32, black)
 end dot
 
+% Record the Top3 players
+% Keisun
 body proc updateLeaderboard
     for i : 1 .. 3
 	if score > top3Scores (i) then
@@ -586,6 +601,7 @@ end updateLeaderboard
 
 % Initialize all buttons
 % In order to avoid "Cannot find button"
+% Keisun, Betty
 body proc initBtn
     btnGiveUp := GUI.CreateButton (400, 0, 80, "GIVE UP", resultScreen)
     GUI.SetColor (btnGiveUp, white)
@@ -613,6 +629,7 @@ end initBtn
 
 % Return if mouse is in an area
 % Used after buttonwait (direction, x, y, bn, bud)
+% Keisun
 body fcn mouseIn (x1, y1, x2, y2 : int) : boolean
     if x >= x1 and x <= x2 and y >= y1 and y <= y2 then
 	result true

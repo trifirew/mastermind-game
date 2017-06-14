@@ -6,8 +6,7 @@
 
 unit
 module G
-    export TextCtr, TextRight,
-	PicFile
+    export TextCtr, TextRight
 
     % Draw text at the vertical centre of the screen
     % text : text to display
@@ -29,11 +28,4 @@ module G
 	var textWidth : int := Font.Width (text, font) % Get width of text in pixels
 	Font.Draw (text, maxx - textWidth - xFromRight, y, font, c)
     end TextRight
-
-    % Obtain a picture from a file with specified scale
-    % fileName : file name in *.gif/jpg/bmp format
-    % width, height : desired picture width and height 
-    fcn PicFile (fileName : string, width : int, height : int) : int
-	result Pic.Scale (Pic.FileNew (fileName), width, height)
-    end PicFile
 end G
