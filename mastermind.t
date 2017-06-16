@@ -35,7 +35,6 @@ var picInstruction : int := Pic.FileNew ("instruction.jpg")
 var picContinue : int := Pic.FileNew ("continue.gif")
 var picEnding : int := Pic.FileNew ("ending.jpg")
 var picThank : int := Pic.FileNew ("thank.jpg")
-var picTick : int := Pic.FileNew ("tick.gif")
 var picLeaderBoard : int := Pic.FileNew ("leaderboard.gif")
 % Colors
 var cLightGreen : int := RGB.AddColor (0.8, 0.95, 0.75)
